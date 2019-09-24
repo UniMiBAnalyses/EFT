@@ -1,8 +1,12 @@
 /*
-createFilesSelcW creates the root files for the likelihood scans with the 13 kinetic variables 
-in the root file "ntuple_RcHW_0p3_2.root" (EFT 6th-order operator: cHW).
+createFilesSelcW creates 14 root files for the likelihood scans, using the 11 kinetic variables 
+in the root file "ntuple_RcHW_0p3_2.root" (EFT 6th-order operator: Q_HW), two derived distributions
+(deltaetajj, deltaphijj) and one "no shape" distribution, filled with ones with the corresponding weights. 
+Since the SM distribution is not contained in "ntuple_RcHW_0p3_2.root", it is taken from "ntuple_RcW_0p3_HS_2.root".
+Preselections are applied. Every root file contains three histograms, which represent the SM term ("histo_linear"), 
+the linear term ("histo_linear") and the quadratic term ("histo_quadratic") of the total EFT distribution.
 
-"./createFilesSelNew1 variable" plots "variable" with a test value of cHW
+"./createFilesSelcHW variable" plots "variable" with a test value of cHW
 
 c++ -o createFilesSelcHW createFilesSelcHW.cpp `root-config --glibs --cflags` 
 
@@ -28,14 +32,16 @@ using namespace std ;
 
 int main (int argc, char** argv) 
 {
+	TH1::SetDefaultSumw2();
+	cout << setprecision(7) << fixed;
+	gStyle->SetLabelSize(.04, "XY");
 	const char* kinetic_variable_plot = "met";
 	if (argc > 1) kinetic_variable_plot = argv[1];
+	
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
 	cnv->Divide(2,1);
 	
-	TH1::SetDefaultSumw2();
-	cout << setprecision(7) << fixed;
 
 	vector<TFile*> files;
 	TFile* f_met = new TFile ("histo_0p3_met_sel_2.root","recreate");
@@ -71,18 +77,21 @@ int main (int argc, char** argv)
 	string name_files[] = {"ntuple_RcW_0p3_HS_2.root","ntuple_RcHW_0p3_2.root","ntuple_RcHW_0p3_2.root"};
 	string name_ntuples[] = {"SSeu_SMlimit","SSeu_RcHW_int_0p3","SSeu_RcHW_bsm_0p3"};
 	string name_global_numbers[] = {"SSeu_SMlimit_nums","SSeu_RcHW_int_0p3_nums","SSeu_RcHW_bsm_0p3_nums"};
+
+	//the last two variables are actually "deltaetajj" and "deltaphijj", "met" is just to read an existing branch ("deltaetajj"
+	//and "deltaphijj" are obtained from the other angular distributions)
 	string kinetic_variables[] = {"met","mjj","mll","ptl1","ptl2","ptj1","ptj2","etaj1","etaj2",
 		"phij1","phij2","met","met","met"};
 	string kinetic_variables_real[] = {"met","mjj","mll","ptl1","ptl2","ptj1","ptj2","etaj1","etaj2",
 		"phij1","phij2","deltaetajj","deltaphijj", "no shape histo"};
 	string histo_names[] = {"histo_sm", "histo_linear", "histo_quadratic"};
-	string histo_titles[] = {"SM", "INT", "BSM"};
+	string histo_titles[] = {"SM", "LIN", "QUAD"};
 
 	//mins and maxs of the distributions (cuts included)
 	float min[] = {30, 500, 20, 25, 20, 30, 30, -5., -5., -M_PI, -M_PI, 2.5, 0, 0};
 	float max[] = {1620, 8600, 1950, 1250, 600, 2000, 1100, 5., 5., M_PI, M_PI, 10., M_PI, 2}; 
 
-	//RMS values for the 11 kinetic variables' distributions (see getRMS_new1.cpp)
+	//RMS values for the 11 kinetic variables' distributions (see getRMS_cHW.cpp)
 	float RMS_array[] = {87.2333, 953.58, 116.004, 70.2788, 31.7565, 139.601, 88.028, 1.98489, 2.35187, 1.81397, 1.81276, 1.99129, 0.806861};   
 			
 	//variable width binning for the first 7 variables: met, mjj, mll, ptl1, ptl2, ptj1 (angular variables excluced)
@@ -108,17 +117,19 @@ int main (int argc, char** argv)
 				}
 				else if (bins_edges_vectors[var_number].back() < second_limit[var_number]) 
 				{
+					//bin_width in the first region = 2/3*RMS
 					bins_edges_vectors[var_number].push_back(bins_edges_vectors[var_number].back() + RMS_array[var_number]*2/3.);
 				}
 				else if (bins_edges_vectors[var_number].back() < max[var_number]) 
 				{
+					//bin_width in the first region = RMS
 					bins_edges_vectors[var_number].push_back(bins_edges_vectors[var_number].back() + RMS_array[var_number]);
 				}
 				else break;
 			}
 			Nbins[var_number] = bins_edges_vectors[var_number].size() - 1;		
 		}
-		else if (var_number != 13)
+		else if (var_number != 13) //fixed width binning for the angular variables
 		{
 			Nbins[var_number] = floor((max[var_number]-min[var_number])/((1./3.)*RMS_array[var_number]));
 			float width_bin = (max[var_number]-min[var_number])/Nbins[var_number];
@@ -127,7 +138,7 @@ int main (int argc, char** argv)
 				bins_edges_vectors[var_number].push_back(bins_edges_vectors[var_number].back() + width_bin);	
 			}
 		}
-		else //one bin histogram
+		else //one bin histogram, defined in the range [0, 2] and filled with ones
 		{
 			bins_edges_vectors[var_number].push_back(2.);
 			Nbins[var_number] = 1;
@@ -137,7 +148,7 @@ int main (int argc, char** argv)
 	vector<TH1F> histos[14];
 	float integrals[14][3];
 		
-	for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) // sm, int, bsm
+	for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) // sm, lin, quad
 	{
 		TFile* myfile = new TFile(name_files[ntuple_number].c_str());
 		TH1F* global_numbers = (TH1F*) myfile->Get(name_global_numbers[ntuple_number].c_str()) ;
@@ -174,13 +185,13 @@ int main (int argc, char** argv)
 				&& *ptj2 > 30 && abs(*etaj1) < 5 && abs(*etaj2) < 5 && abs(*etaj1 - *etaj2) > 2.5)
 				{
 					if (var_number < 11) histo->Fill(*var,*weight);
-					else if (var_number == 11) histo->Fill(abs(*etaj1 - *etaj2), *weight);
-					else if (var_number == 12)
+					else if (var_number == 11) histo->Fill(abs(*etaj1 - *etaj2), *weight); //deltaetajj
+					else if (var_number == 12) //deltaphijj
 					{
 						if (abs(*phij1 - *phij2) < M_PI) histo->Fill(abs(*phij1 - *phij2),*weight);
 						else histo->Fill(2.*M_PI - abs(*phij1 - *phij2), *weight);
 					}
-					else histo->Fill(1, *weight);
+					else histo->Fill(1, *weight); //no shape distribution
 					
 				}
 			}		
@@ -189,7 +200,8 @@ int main (int argc, char** argv)
 			
 			if (ntuple_number == 1) histo->Scale(1./0.3);  //linear term
 			if (ntuple_number == 2) histo->Scale(1./(0.3*0.3));  //quadratic term
-			
+		
+			//overflow bin events moved in the last bin	
 			histo->SetBinContent(histo->GetNbinsX(), histo->GetBinContent(histo->GetNbinsX()) + histo->GetBinContent(histo->GetNbinsX() + 1));
 			histo->SetBinContent(histo->GetNbinsX() + 1, 0.);
 
@@ -216,8 +228,8 @@ int main (int argc, char** argv)
 		delete global_numbers;
 	}
 	
-	//prints the integrals (to be inserted in datacard.txt)
-	for (int var_number = 0; var_number < 14; var_number ++) 
+	//prints the integrals (to be inserted in datacard.txt) and saves the histograms in the root files
+	/*for (int var_number = 0; var_number < 14; var_number ++) 
 	{
 		files[var_number]->cd();
 		histos[var_number][0].Write();
@@ -227,13 +239,13 @@ int main (int argc, char** argv)
 		cout << kinetic_variables_real[var_number].c_str() << "---------------------------------" << endl;
 		for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) cout << integrals[var_number][ntuple_number] << "\t";
 		cout << endl;
-	}
+	}*/
 	
-	string kinetic_variables_tex[] = {"met","m_{jj}","m_{ll}","p_{tl1}","p_{tl2}","p_{tj1}","p_{tj2}",
+	string kinetic_variables_tex[] = {"MET","m_{jj}","m_{ll}","p_{tl1}","p_{tl2}","p_{tj1}","p_{tj2}",
 		"#eta_{j1}","#eta_{j2}","#phi_{j1}","#phi_{j2}","#Delta#eta_{jj}","#Delta#phi_{jj}"};
 	THStack* h_stack = new THStack("hs","");
 
-	float cW = 3;
+	float cW = 4;
 	histos[var_number_plot][2].Scale(cW*cW); // quadratic scaling relation
 	histos[var_number_plot][1].Scale(cW);	 // linear scaling relation
 
@@ -292,7 +304,7 @@ int main (int argc, char** argv)
 	h_stack->GetXaxis()->SetTitleOffset(.9);
 	h_stack->GetYaxis()->SetTitle(ylabel.c_str()); 
 	h_stack->GetYaxis()->SetTitleSize(.05);
-	h_stack->GetYaxis()->SetTitleOffset(1.1); 
+	h_stack->GetYaxis()->SetTitleOffset(.9); 
 	if (var_number_plot < 7 || var_number_plot == 11) gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
 	else if (var_number_plot != 12) gPad->BuildLegend(0.55,0.14,0.85,0.34,"");
 	else gPad->BuildLegend(0.15,0.44,0.45,0.64,"");
@@ -316,8 +328,8 @@ int main (int argc, char** argv)
 	cnv->Update();
 
 	//To save the plots
-	string plot_name = kinetic_variable_plot + string("_sel_cHW.png");
-	cnv->Print(plot_name.c_str(), "png");
+	/*string plot_name = kinetic_variable_plot + string("_sel_cHW.png");
+	cnv->Print(plot_name.c_str(), "png");*/
 
 	myapp->Run();
 	
