@@ -7,7 +7,32 @@ Datacard creator for likelihood scan
     2) no background, reasonable cuts, likelihood scan
     3) background, reasonable cuts, likelihood scan. Falling spectrum of background assumed and SM/background = 1
 
+N.B. all the ntuples used are avilable at http://govoni.web.cern.ch/govoni/EFT/
 
-- createFilesSelcW.cpp: creates 13 root files for every kinetic variable contained in the HS ntuple "ntuple_RcW_0p3_HS_2.root" (link: https://cernbox.cern.ch/index.php/s/SIbEj8wsnpRu49S)), with preselections and variable width binning. Each root file is created with three histograms inside: histo_sm, histo_linear, histo_quadratic. The values of the integrals (to be inserted in datacard.txt to plot the likelihood scans) are print on terminal. The EFT 6th-order operator tested is Q_W. 
+- createFilesSelcW.cpp: creates 14 root files for the likelihood scans, using the 11 kinetic variables in the root file "ntuple_RcW_0p3_HS_2.root" (6th-order operator: Q_W), two derived distributions (deltaetajj, deltaphijj) and one "no shape" distribution, filled with ones with the corresponding weights. Preselections are applied. Every root file contains three histograms, which represent the SM term ("histo_linear"), the linear term ("histo_linear") and the quadratic term ("histo_quadratic") of the total EFT distribution. 
 
-- createFilesSelcHW.cpp: same as createFilesSelNew1.cpp, but the EFT 6th-order operator tested is Q_HW (distributions are created with the HS ntuple "ntuple_RcHW_0p3_2.root" (link: https://cernbox.cern.ch/index.php/s/VKIkgTBeX2UfRtv)). 
+- createFilesSelcHW.cpp: creates 14 root files for the likelihood scans, using the 11 kinetic variables in the root file "ntuple_RcHW_0p3_2.root" (EFT 6th-order operator: Q_HW), two derived distributions (deltaetajj, deltaphijj) and one "no shape" distribution, filled with ones with the corresponding weights. Since the SM distribution is not contained in "ntuple_RcHW_0p3_2.root", it is taken from "ntuple_RcW_0p3_HS_2.root". Preselections are applied. Every root file contains three histograms, which represent the SM term ("histo_linear"), the linear term ("histo_linear") and the quadratic term ("histo_quadratic") of the total EFT distribution. 
+
+- getRMScW.cpp: prints the RMS of the total EFT distribution (SM + LIN + QUAD) for the variables met, mjj, mll, ptl1, ptl2, ptj1, ptj2, etaj1, etaj2, phij1, phij2, deltaetajj and deltaphijj, using the HS ntuple "ntuple_RcW_0p3_HS_2.root" (6-th dimension EFT operator: Q_W). No selections are applied. To create the total EFT distribution a realistic value of cW is used (cW = 0.01).
+
+- getRMScHW.cpp: prints the RMS of the total EFT distribution (SM + LIN + QUAD) for the variables met, mjj, mll, ptl1, ptl2, ptj1, ptj2, etaj1, etaj2, phij1, phij2, deltaetajj and deltaphijj, using the HS ntuple "ntuple_RcHW_0p3_2.root" (6-th dimension EFT operator: Q_HW). Since the SM distribution is not contained in "ntuple_RcHW_0p3_2.root", it is taken from "ntuple_RcW_0p3_HS_2.root". No selections are applied.
+To create the total EFT distribution a realistic value of cW is used (cHW = 0.01).
+
+- MC_vs_analitic.cpp: plots the differences between the analitic distributions (obtained with scaling relations from the HS ntuple "ntuple_RcW_0p3_HS.root") and the MC distributions ("ntuple_RcW_0p05.root",
+"ntuple_RcW_0p1.root", "ntuple_RcW_0p4.root", "ntuple_RcW_1.root"). The SM distributions are built
+from the HS ntuple ntuple_SMlimit_HS.root. No preselections are applied.
+
+- range_vs_kineticvar.cpp: plots a bar graph with two bars for every kinetic variable, one for the width of the 68% confidence range and the other for the 95% confidence range. Data are contained in the files "range_cW.txt" and "range_cHW.txt", where every raw represents a kinetic variable and contains 5 values: the left endpoint of the 95% range, the left endpoint of the 68% range, the right enpoint of the 68% range, the right endpoint of the 95% range and the minimum point of the likelihood scan. The last raw contains the data of the "no shape" distribution (histogram with one bin), which gives un upper limit to the ranges.
+
+- createFilesPTL1_bkg.cpp: creates the root files to study how the likelihood scan changes by varying the background (x_0, parameter in the exponential model), using the ptl1 distribution from the ntuple "ntuple_RcW_0p3_HS_2.root" (EFT 6th-order operator: Q_W).
+
+- range_vs_x0.cpp: plots the variation of the confidence ranges (68% and 95%) by varying the parameter x_0 in the exponential model of the background. The tested variable is ptl1 (6th-order EFT operator: Q_W). Data are contained in the file "range_ptl1_bkg.txt", which has 12 raws (for 12 values of x_0 tested); each raw has 5 values (see range_vs_kineticvar.cpp).
+
+- createFilesPTL1_lum.cpp: creates the root files to study how the likelihood scan changes by varying the luminosity using the ptl1 distribution (with a fixed background, x_0 = 100 GeV) from the ntuple "ntuple_RcW_0p3_HS_2.root" (EFT 6th-order operator: Q_W).
+
+- createFilesPTL2_lum.cpp: creates the root files to study how the likelihood scan changes by varying the luminosity (with a fixed background, x_0 = 100 GeV), using the ptl2 distribution from the ntuple "ntuple_RcHW_0p3_2.root" (EFT 6th-order operator: Q_HW)
+
+- range_vs_lum_ptl1.cpp: plots the variation of the confidence ranges (68% and 95%) by varying the integrated luminosity. The tested variable is ptl1 (6th-order EFT operator: Q_W), the root files are generated by the program "crateFilesPTL1_lum.cpp". Data are contained in the file "range_ptl1_lum.txt", which has 11 raws (for 11 values of luminosity); each raw has 5 values (see range_vs_kineticvar.cpp). 
+
+- range_vs_lum_ptl2.cpp: plots the variation of the confidence ranges (68% and 95%) by varying the integrated luminosity. The tested variable is ptl2 (6th-order EFT operator: Q_HW), the root files are generated by the program "crateFilesPTL2_lum.cpp". Data are contained in the file "range_ptl2_lum.txt", which contains 10 raws (for 10 values of luminosity); each raw has 5 values (see range_vs_kineticvar.cpp).
+
