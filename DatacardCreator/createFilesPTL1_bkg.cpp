@@ -3,7 +3,7 @@ createFilesPTL1_bkg creates the root files to study how the likelihood scan chan
 by varying the background (x_0) (EFT 6th-order operator: Q_W), using the ptl1 distribution
 from the ntuple ntuple_RcW_0p3_HS_2.root
 
-c++ -o createFilesPTL1_bkg createFilesPTL1_bkg.cpp `root-config --glibs --cflags` 
+c++ -o createFilesPTL1_bkg createFilesPTL1_bkg.cpp `root-config --glibs --cflags`
 
 ./createFilesPTL1_bkg
 
@@ -30,13 +30,13 @@ c++ -o createFilesPTL1_bkg createFilesPTL1_bkg.cpp `root-config --glibs --cflags
 using namespace std ;
 
 
-int main (int argc, char** argv) 
+int main (int argc, char** argv)
 {
 	gStyle->SetLabelSize(.04, "XY");
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
 	cnv->Divide(2,1);
-	
+
 	TH1::SetDefaultSumw2();
 	cout << setprecision(7) << fixed;
 
@@ -53,7 +53,7 @@ int main (int argc, char** argv)
 	TFile* f10 = new TFile ("ptl1_bkg_x0_10.root","recreate");
 	TFile* f11 = new TFile ("ptl1_bkg_x0_11.root","recreate");
 	TFile* f12 = new TFile ("ptl1_bkg_x0_12.root","recreate");
-	
+
 	files.push_back(f1);
 	files.push_back(f2);
 	files.push_back(f3);
@@ -67,8 +67,8 @@ int main (int argc, char** argv)
 	files.push_back(f11);
 	files.push_back(f12);
 
-	string name_ntuples[] = {"SSeu_SMlimit","SSeu_RcW_int_0p3","SSeu_RcW_bsm_0p3"};
-	string name_global_numbers[] = {"SSeu_SMlimit_nums","SSeu_RcW_int_0p3_nums","SSeu_RcW_bsm_0p3_nums"};
+	string name_ntuples[] = {"sm","lin","quad"};
+	string name_global_numbers[] = {"sm_nums","lin_nums","quad_nums"};
 	string histo_names[] = {"histo_sm", "histo_linear", "histo_quadratic"};
 	string histo_titles[] = {"SM", "LIN", "QUAD"};
 
@@ -80,36 +80,36 @@ int main (int argc, char** argv)
 	float RMS = 70.2788; //RMS of PTL1 distribution (see getRMScW.cpp)
 	vector<float> bins_edges_vector;
 	bins_edges_vector.push_back(min);
-	while (true) 
+	while (true)
 	{
-		if (bins_edges_vector.back() < first_limit) 
-		{	
+		if (bins_edges_vector.back() < first_limit)
+		{
 			//bin_width in the first region = 1/3*RMS
 			bins_edges_vector.push_back(bins_edges_vector.back() + RMS/3.);
 		}
-		else if (bins_edges_vector.back() < second_limit) 
+		else if (bins_edges_vector.back() < second_limit)
 		{
 			//bin_width in the first region = 2/3*RMS
 			bins_edges_vector.push_back(bins_edges_vector.back() + RMS*2/3.);
 		}
-		else if (bins_edges_vector.back() < max) 
+		else if (bins_edges_vector.back() < max)
 		{
 			//bin_width in the first region = RMS
 			bins_edges_vector.push_back(bins_edges_vector.back() + RMS);
 		}
 		else break;
 	}
-	
+
 	int Nbins = bins_edges_vector.size() - 1;
 
-	float* bins_edges = bins_edges_vector.data();		
+	float* bins_edges = bins_edges_vector.data();
 	float* bins_edges_bkg_overflow = bins_edges_vector.data();
-	bins_edges_bkg_overflow[bins_edges_vector.size()] = 2*max;	
-	
+	bins_edges_bkg_overflow[bins_edges_vector.size()] = 2*max;
+
 	vector<TH1F> histos;
 	float integrals[3];
-	TFile* myfile = new TFile("ntuple_RcW_0p3_HS_2.root");
-		
+	TFile* myfile = new TFile("/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/VBS_e+_mu+.root");
+
 
 	for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) // sm, int, bsm
 	{
@@ -118,10 +118,10 @@ int main (int argc, char** argv)
 		float sum_weights_total = global_numbers->GetBinContent(2);
 		float sum_weights_selected = global_numbers->GetBinContent(3);
 		float luminosity = 100;
-		float normalization = cross_section*luminosity/sum_weights_total;	
-		
+		float normalization = cross_section*luminosity/sum_weights_total;
+
 		TH1F* histo = new TH1F(histo_titles[ntuple_number].c_str(), histo_titles[ntuple_number].c_str(), Nbins, bins_edges);
-	
+
 		TTreeReader reader (name_ntuples[ntuple_number].c_str(), myfile);
 		TTreeReaderValue<float> weight (reader, "w"); //weights branch
 		TTreeReaderValue<float> met (reader, "met");
@@ -135,22 +135,22 @@ int main (int argc, char** argv)
 		TTreeReaderValue<float> etaj2 (reader, "etaj2");
 		TTreeReaderValue<float> phij1 (reader, "phij1");
 		TTreeReaderValue<float> phij2 (reader, "phij2");
-		
+
 		//preselections
-		while (reader.Next ()) 
-		{	
-			if (*met > 30 && *mjj > 500 && *mll > 20 && *ptl1 > 25 && *ptl2 > 20 && *ptj1 > 30  
+		while (reader.Next ())
+		{
+			if (*met > 30 && *mjj > 500 && *mll > 20 && *ptl1 > 25 && *ptl2 > 20 && *ptj1 > 30
 			&& *ptj2 > 30 && abs(*etaj1) < 5 && abs(*etaj2) < 5 && abs(*etaj1 - *etaj2) > 2.5)
 			{
 				histo->Fill(*ptl1,*weight);
 			}
-		}		
+		}
 
 		histo->Scale(normalization);
-		
+
 		if (ntuple_number == 1) histo->Scale(1./0.3);  //linear term
 		if (ntuple_number == 2) histo->Scale(1./(0.3*0.3));  //quadratic term
-		
+
 		histo->SetBinContent(histo->GetNbinsX(), histo->GetBinContent(histo->GetNbinsX()) + histo->GetBinContent(histo->GetNbinsX() + 1));
 		histo->SetBinContent(histo->GetNbinsX() + 1, 0.);
 
@@ -167,36 +167,36 @@ int main (int argc, char** argv)
 			}
 			cout << endl;
 		}*/
-		
-		histos.push_back(*histo);			
+
+		histos.push_back(*histo);
 		integrals[ntuple_number] = histo->Integral();
-		
+
 		histo->Reset();
 		delete histo;
 		delete global_numbers;
 	}
-	
-	//values of the parameters x_0 in the exponential model for bkg
-	float x_0[] = {50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600};  
-	
-	
-	float cW = 1; //test value of cW for the plots
-	string bkg_names[] = {"x_0_1", "x_0_2", "x_0_3", "x_0_4", "x_0_5", "x_0_6", "x_0_7", "x_0_8", "x_0_9", "x_0_10", "x_0_11"}; 
 
-	//to create the overflow bin for the bkg distribution, the bkg is first generated in the range [min, 2*max], then it is 
+	//values of the parameters x_0 in the exponential model for bkg
+	float x_0[] = {50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600};
+
+
+	float cW = 1; //test value of cW for the plots
+	string bkg_names[] = {"x_0_1", "x_0_2", "x_0_3", "x_0_4", "x_0_5", "x_0_6", "x_0_7", "x_0_8", "x_0_9", "x_0_10", "x_0_11"};
+
+	//to create the overflow bin for the bkg distribution, the bkg is first generated in the range [min, 2*max], then it is
 	//generated in the range [min, max] and the overflow events of the first distribution are moved in the last bin of the
 	//second one (rescaling the integral in order to have 1:1 with the signal)
 	TF1* bkg_model = new TF1("bkg_model", "exp(-x/[0])", min, 2*max);
 	TH1F* bkg = new TH1F("histo_bkg", "BKG", Nbins, bins_edges);
 	TH1F* bkg_overflow = new TH1F("histo_bkg_overflow", "BKG_overflow", Nbins+1, bins_edges_bkg_overflow);
 
-	for (int var_bkg = 0; var_bkg < 12; var_bkg++) 
+	for (int var_bkg = 0; var_bkg < 12; var_bkg++)
 	{
 		bkg->SetFillColor(kWhite);
 		bkg_model->SetParameter(0, x_0[var_bkg]);
 		bkg_overflow->FillRandom("bkg_model", pow(10, 6));
 		bkg_overflow->Scale(histos[0].Integral(1, histos[0].GetNbinsX()+1)/bkg_overflow->Integral()); // integral_bkg:integral_signal(sm) = 1:1
-		for (int bin_counter = 1; bin_counter < bkg->GetNbinsX(); bin_counter++) 
+		for (int bin_counter = 1; bin_counter < bkg->GetNbinsX(); bin_counter++)
 		{
 			bkg->SetBinContent(bin_counter, bkg_overflow->GetBinContent(bin_counter));
 		}
@@ -230,18 +230,18 @@ int main (int argc, char** argv)
 		sm_bkg->SetLineColor(kRed);
 		sm_bkg->SetLineWidth(2.);
 
-		for (int bin_counter = 0; bin_counter < bkg->GetNbinsX()+1; bin_counter++) 
+		for (int bin_counter = 0; bin_counter < bkg->GetNbinsX()+1; bin_counter++)
 		{
 			bkg->SetBinContent(bin_counter, bkg->GetBinContent(bin_counter)/bkg->GetBinWidth(bin_counter));
 			histo_sum->SetBinContent(bin_counter, histo_sum->GetBinContent(bin_counter)/histo_sum->GetBinWidth(bin_counter));
 			sm_bkg->SetBinContent(bin_counter, sm_bkg->GetBinContent(bin_counter)/sm_bkg->GetBinWidth(bin_counter));
 		}
-		
+
 		THStack* h_stack = new THStack("hs","");
 		h_stack->Add(bkg);
 		h_stack->Add(histo_sum);
 
-		
+
 		cnv->cd(1);
 
 		h_stack->Draw("hist");
@@ -255,18 +255,18 @@ int main (int argc, char** argv)
 		h_stack->GetXaxis()->SetTitle(xlabel.c_str());
 		h_stack->GetXaxis()->SetTitleSize(.05);
 		h_stack->GetXaxis()->SetTitleOffset(.9);
-		h_stack->GetYaxis()->SetTitle(ylabel.c_str()); 
+		h_stack->GetYaxis()->SetTitle(ylabel.c_str());
 		h_stack->GetYaxis()->SetTitleSize(.05);
-		h_stack->GetYaxis()->SetTitleOffset(.8); 
+		h_stack->GetYaxis()->SetTitleOffset(.8);
 		sm_bkg->Draw("HIST SAME");
 		gPad->BuildLegend(0.55,0.65,0.90,0.90,"");
 
 		cnv->Modified();
 		cnv->Update();
-			
+
 
 		cnv->cd(2);
-		
+
 		h_stack->Draw("hist");
 		title += " (log scale)";
 		h_stack->SetTitle(title.c_str());
@@ -281,7 +281,7 @@ int main (int argc, char** argv)
 		bkg->Reset();
 		bkg_overflow->Reset();
 
-		//To save the plots 
+		//To save the plots
 		stringstream ss_name_png;
 		ss_name_png << var_bkg+1;
 		string name_png = "ptl1_x0_" + ss_name_png.str() + ".png";
@@ -290,7 +290,6 @@ int main (int argc, char** argv)
 	}
 
 	myapp->Run();
-	
+
 	return 0 ;
 }
-

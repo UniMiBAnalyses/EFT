@@ -1,13 +1,13 @@
 /*
-createFilesSelcW creates 14 root files for the likelihood scans, using the 11 kinetic variables 
+createFilesSelcW creates 14 root files for the likelihood scans, using the 11 kinetic variables
 in the root file "ntuple_RcW_0p3_HS_2.root" (EFT 6th-order operator: Q_W), two derived distributions
-(deltaetajj, deltaphijj) and one "no shape" distribution, filled with ones with the corresponding weights. 
+(deltaetajj, deltaphijj) and one "no shape" distribution, filled with ones with the corresponding weights.
 Preselections are applied. Every root file contains three histograms, which represent the SM term ("histo_linear"),
-the linear term ("histo_linear") and the quadratic term ("histo_quadratic") of the total EFT distribution. 
+the linear term ("histo_linear") and the quadratic term ("histo_quadratic") of the total EFT distribution.
 
 "./createFilesSelcW variable" plots "variable" with a test value of cW
 
-c++ -o createFilesSelcW createFilesSelcW.cpp `root-config --glibs --cflags` 
+c++ -o createFilesSelcW createFilesSelcW.cpp `root-config --glibs --cflags`
 
 */
 
@@ -29,7 +29,7 @@ c++ -o createFilesSelcW createFilesSelcW.cpp `root-config --glibs --cflags`
 using namespace std ;
 
 
-int main (int argc, char** argv) 
+int main (int argc, char** argv)
 {
 	TH1::SetDefaultSumw2();
 	cout << setprecision(7) << fixed;
@@ -56,7 +56,7 @@ int main (int argc, char** argv)
 	TFile* f_deltaetajj = new TFile ("histo_0p3_deltaetajj_sel.root","recreate");
 	TFile* f_deltaphijj = new TFile ("histo_0p3_deltaphijj_sel.root","recreate");
 	TFile* f_noshape = new TFile ("histo_0p3_noshape_sel.root","recreate");
-	
+
 	files.push_back(f_met);
 	files.push_back(f_mjj);
 	files.push_back(f_mll);
@@ -72,8 +72,8 @@ int main (int argc, char** argv)
 	files.push_back(f_deltaphijj);
 	files.push_back(f_noshape);
 
-	string name_ntuples[] = {"SSeu_SMlimit","SSeu_RcW_int_0p3","SSeu_RcW_bsm_0p3"};
-	string name_global_numbers[] = {"SSeu_SMlimit_nums","SSeu_RcW_int_0p3_nums","SSeu_RcW_bsm_0p3_nums"};
+	string name_ntuples[] = {"sm","lin","quad"};
+	string name_global_numbers[] = {"sm_nums","lin_nums","quad_nums"};
 
 	//the last two variables are actually "deltaetajj" and "deltaphijj", "met" is just to read an existing branch ("deltaetajj"
 	//and "deltaphijj" are obtained from the other angular distributions)
@@ -86,11 +86,22 @@ int main (int argc, char** argv)
 
 	//mins and maxs of the distributions
 	float min[] = {30, 500, 20, 25, 20, 30, 30, -5., -5., -M_PI, -M_PI, 2.5, 0, 0};
-	float max[] = {1620, 8600, 1950, 1250, 600, 2000, 1100, 5., 5., M_PI, M_PI, 10., M_PI, 2}; 
+	float max[] = {1620, 8600, 1950, 1250, 600, 2000, 1100, 5., 5., M_PI, M_PI, 10., M_PI, 2};
 
 	//RMS values for the 11 kinetic variables' distributions (see getRMS_cW.cpp)
-	float RMS_array[] = {87.2333, 953.58, 116.004, 70.2788, 31.7565, 139.601, 88.028, 1.98489, 2.35187, 1.81397, 1.81276, 1.99129, 0.806861};   
-			
+	string line;
+	float RMS_array[13];
+	int i=0;
+	ifstream file("OPERATOR_rms.txt");
+	if(file.is_open()){
+		while(getline(file,line)){
+			RMS_array[i]=stof(line);
+			i++;
+		}
+		file.close();
+	}
+	//float RMS_array[] = {87.2333, 953.58, 116.004, 70.2788, 31.7565, 139.601, 88.028, 1.98489, 2.35187, 1.81397, 1.81276, 1.99129, 0.806861};
+
 	//variable width binning for the first 7 variables: met, mjj, mll, ptl1, ptl2, ptj1 (fixed width binning for the angular variables)
 	vector<float> bins_edges_vectors[14];
 	float first_limit[] = {1000, 8000, 1350, 900, 380, 1600, 900}; //from here bin_width*2
@@ -99,32 +110,32 @@ int main (int argc, char** argv)
 	int var_number_plot = 0;
 
 	//binning
-	for (int var_number = 0; var_number < 14; var_number++) 	
+	for (int var_number = 0; var_number < 14; var_number++)
 	{
 		if (kinetic_variable_plot == kinetic_variables_real[var_number]) var_number_plot = var_number;
 		bins_edges_vectors[var_number].push_back(min[var_number]);
 		if (var_number < 7) //variable width binning
-		{	
-			while (true) 
+		{
+			while (true)
 			{
-				if (bins_edges_vectors[var_number].back() < first_limit[var_number]) 
-				{	
+				if (bins_edges_vectors[var_number].back() < first_limit[var_number])
+				{
 					//bin_width in the first region = 1/3*RMS
 					bins_edges_vectors[var_number].push_back(bins_edges_vectors[var_number].back() + RMS_array[var_number]/3.);
 				}
-				else if (bins_edges_vectors[var_number].back() < second_limit[var_number]) 
+				else if (bins_edges_vectors[var_number].back() < second_limit[var_number])
 				{
 					//bin_width in the second region = 2/3*RMS
 					bins_edges_vectors[var_number].push_back(bins_edges_vectors[var_number].back() + RMS_array[var_number]*2/3.);
 				}
-				else if (bins_edges_vectors[var_number].back() < max[var_number]) 
+				else if (bins_edges_vectors[var_number].back() < max[var_number])
 				{
 					//bin_width in the third region = RMS
 					bins_edges_vectors[var_number].push_back(bins_edges_vectors[var_number].back() + RMS_array[var_number]);
 				}
 				else break;
 			}
-			Nbins[var_number] = bins_edges_vectors[var_number].size() - 1;		
+			Nbins[var_number] = bins_edges_vectors[var_number].size() - 1;
 		}
 		else if (var_number != 13) //fixed width binning for the angular variables
 		{
@@ -132,7 +143,7 @@ int main (int argc, char** argv)
 			float width_bin = (max[var_number]-min[var_number])/Nbins[var_number];
 			while (bins_edges_vectors[var_number].back() < max[var_number])
 			{
-				bins_edges_vectors[var_number].push_back(bins_edges_vectors[var_number].back() + width_bin);	
+				bins_edges_vectors[var_number].push_back(bins_edges_vectors[var_number].back() + width_bin);
 			}
 		}
 		else //one bin histogram, defined in the range [0, 2] and filled with ones
@@ -141,11 +152,11 @@ int main (int argc, char** argv)
 			Nbins[var_number] = 1;
 		}
 	}
-	
+
 	vector<TH1F> histos[14];
 	float integrals[14][3];
-	TFile* myfile = new TFile("ntuple_RcW_0p3_HS_2.root");
-		
+	TFile* myfile = new TFile("/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/VBS_e+_mu+.root");
+
 	for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) // sm, lin, quad
 	{
 		TH1F* global_numbers = (TH1F*) myfile->Get(name_global_numbers[ntuple_number].c_str()) ;
@@ -153,13 +164,13 @@ int main (int argc, char** argv)
 		float sum_weights_total = global_numbers->GetBinContent(2);
 		float sum_weights_selected = global_numbers->GetBinContent(3);
 		float luminosity = 100;
-		float normalization = cross_section*luminosity/sum_weights_total;	
-	
-		for (int var_number = 0; var_number < 14; var_number++) 
+		float normalization = cross_section*luminosity/sum_weights_total;
+
+		for (int var_number = 0; var_number < 14; var_number++)
 		{
-			float* bins_edges = bins_edges_vectors[var_number].data();		
+			float* bins_edges = bins_edges_vectors[var_number].data();
 			TH1F* histo = new TH1F(kinetic_variables_real[var_number].c_str(), histo_titles[ntuple_number].c_str(), Nbins[var_number], bins_edges);
-		
+
 			TTreeReader reader (name_ntuples[ntuple_number].c_str(), myfile);
 			TTreeReaderValue<float> var (reader, kinetic_variables[var_number].c_str());
 			TTreeReaderValue<float> weight (reader, "w"); //weights branch
@@ -174,11 +185,11 @@ int main (int argc, char** argv)
 			TTreeReaderValue<float> etaj2 (reader, "etaj2");
 			TTreeReaderValue<float> phij1 (reader, "phij1");
 			TTreeReaderValue<float> phij2 (reader, "phij2");
-			
+
 			//selections
-			while (reader.Next ()) 
-			{	
-				if (*met > 30 && *mjj > 500 && *mll > 20 && *ptl1 > 25 && *ptl2 > 20 && *ptj1 > 30  
+			while (reader.Next ())
+			{
+				if (*met > 30 && *mjj > 500 && *mll > 20 && *ptl1 > 25 && *ptl2 > 20 && *ptj1 > 30
 				&& *ptj2 > 30 && abs(*etaj1) < 5 && abs(*etaj2) < 5 && abs(*etaj1 - *etaj2) > 2.5)
 				{
 					if (var_number < 11) histo->Fill(*var,*weight);
@@ -190,13 +201,13 @@ int main (int argc, char** argv)
 					}
 					else histo->Fill(1, *weight); //no shape distribution
 				}
-			}		
+			}
 
 			histo->Scale(normalization);
-			
+
 			if (ntuple_number == 1) histo->Scale(1./0.3);  //linear term
 			if (ntuple_number == 2) histo->Scale(1./(0.3*0.3));  //quadratic term
-			
+
 			//overflow bin events moved in the last bin
 			histo->SetBinContent(histo->GetNbinsX(), histo->GetBinContent(histo->GetNbinsX()) + histo->GetBinContent(histo->GetNbinsX() + 1));
 			histo->SetBinContent(histo->GetNbinsX() + 1, 0.);
@@ -214,8 +225,8 @@ int main (int argc, char** argv)
 				}
 				cout << endl;
 			}*/
-			
-			histos[var_number].push_back(*histo);			
+
+			histos[var_number].push_back(*histo);
 			integrals[var_number][ntuple_number] = histo->Integral();
 
 			histo->Reset();
@@ -223,21 +234,21 @@ int main (int argc, char** argv)
 
 		delete global_numbers;
 	}
-	
+
 	//prints the integrals (to be inserted in datacard.txt) and saves the histograms in the root file
-	for (int var_number = 0; var_number < 14; var_number ++) 
+	for (int var_number = 0; var_number < 14; var_number ++)
 	{
 		files[var_number]->cd();
 		histos[var_number][0].Write();
 		histos[var_number][1].Write();
 		histos[var_number][2].Write();
-		files[var_number]->Write(); 
+		files[var_number]->Write();
 		files[var_number]->Close();
 		cout << kinetic_variables_real[var_number].c_str() << "---------------------------------" << endl;
 		for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) cout << integrals[var_number][ntuple_number] << "\t";
 		cout << endl;
 	}
-	
+
 	string kinetic_variables_tex[] = {"MET","m_{jj}","m_{ll}","p_{tl1}","p_{tl2}","p_{tj1}","p_{tj2}",
 		"#eta_{j1}","#eta_{j2}","#phi_{j1}","#phi_{j2}","#Delta#eta_{jj}","#Delta#phi_{jj}"};
 	THStack* h_stack = new THStack("hs","");
@@ -247,7 +258,7 @@ int main (int argc, char** argv)
 	histos[var_number_plot][1].Scale(cW);	 // linear scaling relation
 
 	//PLOT
-	
+
 	//plots only the sm distribution, to check the binning
 	/*sm->SetLineColor(kBlue);
 	sm->SetLineWidth(2.);
@@ -256,7 +267,7 @@ int main (int argc, char** argv)
 
 	//change of variable in the y axis, from "number of events" to "(number of events)/(bin width)"
 	for (int j = 0; j < 3; j++) {
-		for (int i = 0; i < histos[var_number_plot][j].GetNbinsX()+1; i++) 
+		for (int i = 0; i < histos[var_number_plot][j].GetNbinsX()+1; i++)
 		{
 			histos[var_number_plot][j].SetBinContent(i, histos[var_number_plot][j].GetBinContent(i)/histos[var_number_plot][j].GetBinWidth(i));
 		}
@@ -271,14 +282,14 @@ int main (int argc, char** argv)
 
 	h_stack->Add(&histos[var_number_plot][0]);
 	h_stack->Add(&histos[var_number_plot][2]);
-	h_stack->Add(&histos[var_number_plot][1]);		
+	h_stack->Add(&histos[var_number_plot][1]);
 
 	TH1F* histo_sum = new TH1F(histos[var_number_plot][0] + histos[var_number_plot][1] + histos[var_number_plot][2]);
 	histo_sum->SetTitle("SM + BSM + INT");
 	histo_sum->SetLineColor(kRed);
 	histo_sum->SetFillColor(kWhite);
 	histo_sum->SetLineWidth(2.);
-	
+
 	cnv->cd(1);
 
 	h_stack->Draw("HIST");
@@ -289,10 +300,10 @@ int main (int argc, char** argv)
 	h_stack->SetTitle(title.c_str());
 	string xlabel = string(kinetic_variables_tex[var_number_plot]);
 	string ylabel = "events / ";
-	if (var_number_plot < 7) 
+	if (var_number_plot < 7)
 	{
 		xlabel += string(" (Gev)");
-		ylabel += string("Gev");	
+		ylabel += string("Gev");
 	}
 
 	else if (var_number_plot == 7 || var_number_plot == 8 || var_number_plot == 11) ylabel += string("#eta unit");
@@ -300,18 +311,18 @@ int main (int argc, char** argv)
 	h_stack->GetXaxis()->SetTitle(xlabel.c_str());
 	h_stack->GetXaxis()->SetTitleSize(.05);
 	h_stack->GetXaxis()->SetTitleOffset(.9);
-	h_stack->GetYaxis()->SetTitle(ylabel.c_str()); 
+	h_stack->GetYaxis()->SetTitle(ylabel.c_str());
 	h_stack->GetYaxis()->SetTitleSize(.05);
-	h_stack->GetYaxis()->SetTitleOffset(.9); 
+	h_stack->GetYaxis()->SetTitleOffset(.9);
 	if (var_number_plot < 7 || var_number_plot == 11) gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
 	else if (var_number_plot != 12) gPad->BuildLegend(0.55,0.14,0.85,0.34,"");
 	else gPad->BuildLegend(0.15,0.44,0.45,0.64,"");
 
 	cnv->Modified();
 	cnv->Update();
-		
+
 	cnv->cd(2);
-		
+
 	//LOGARITHMIC PLOT
 	gPad->SetLogy();
 	h_stack->Draw("HIST");
@@ -330,7 +341,6 @@ int main (int argc, char** argv)
 	cnv->Print(plot_name.c_str(), "png");*/
 
 	myapp->Run();
-	
+
 	return 0 ;
 }
-
