@@ -44,7 +44,7 @@ int main (int argc, char** argv)
 
 	vector<TH1F*> histos;
 
-	TFile* myfile = new TFile("/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/VBS_e+_mu+.root");
+	TFile* myfile = new TFile("/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/hwb_0p02.root");
 
 	string name_ntuples[] = {"sm", "lin", "quad"};
 	string name_global_numbers[] = {"sm_nums", "lin_nums", "quad_nums"};
@@ -54,7 +54,7 @@ int main (int argc, char** argv)
 
 	//opening text file to write rms in it
 
-	ofstream file ("OPERATOR_rms.txt");
+	ofstream file ("hwb_0p02_rms.txt");
 	if(file.is_open()){
 		for (int var_number = 0; var_number < 13; var_number++) //for loop to scan all the variables
 		{
@@ -96,12 +96,12 @@ int main (int argc, char** argv)
 			}
 
 			TH1F* sm = new TH1F ("sm", "sm", Nbins, min, max);
-			TH1F* quad = new TH1F ("bsm", "bsm", Nbins, min, max);
 			TH1F* lin = new TH1F ("int", "int", Nbins, min, max);
+			TH1F* quad = new TH1F ("bsm", "bsm", Nbins, min, max);
 
 			histos.push_back(sm);
-			histos.push_back(quad);
 			histos.push_back(lin);
+			histos.push_back(quad);
 
 			for (int distr_number = 0; distr_number < 3; distr_number++)
 			{
@@ -120,8 +120,9 @@ int main (int argc, char** argv)
 				histos[distr_number]->Scale(normalization);
 
 				//rescaling QUAD and LIN distributions with a realistic value of the Wilson coefficient
-				if (distr_number == 1) histos[distr_number]->Scale((0.01*0.01)/(0.3*0.3));
-				if (distr_number == 2) histos[distr_number]->Scale(0.01/0.3);
+				//this is for a wilson coefficient=0.3 and getting 0.1
+				if (distr_number == 1) histos[distr_number]->Scale(10/0.02);
+				if (distr_number == 2) histos[distr_number]->Scale((10*10)/(0.02*0.02));
 
 				histos[distr_number]->ResetStats();
 
@@ -131,13 +132,18 @@ int main (int argc, char** argv)
 
 			//total EFT distribution
 			TH1F* histo_sum = new TH1F(*histos[0] + *histos[1] + *histos[2]);
+			/*TApplication* myapp = new TApplication ("myapp", NULL, NULL);
+			TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
+			cnv->cd();
+			histo_sum->Draw();
+			cnv->Modified();
+			cnv->Update();
 
+			myapp->Run();*/
 			float RMS = histo_sum->GetRMS(); //RMS of the total EFT distribution
-			stringstream ss;
-			ss << var_number+1;
 
 			//good visualization
-			cout <<RMS<<endl;
+			cout << RMS <<endl;
 			file << RMS <<endl;
 
 			//bad visualization (to copy the values)

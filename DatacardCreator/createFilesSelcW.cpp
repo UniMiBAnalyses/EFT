@@ -28,6 +28,14 @@ c++ -o createFilesSelcW createFilesSelcW.cpp `root-config --glibs --cflags`
 
 using namespace std ;
 
+bool replace(std::string& str, const std::string& from, const std::string& to) {
+    size_t start_pos = str.find(from);
+    if(start_pos == std::string::npos)
+        return false;
+    str.replace(start_pos, from.length(), to);
+    return true;
+}
+
 
 int main (int argc, char** argv)
 {
@@ -35,7 +43,18 @@ int main (int argc, char** argv)
 	cout << setprecision(7) << fixed;
 	gStyle->SetLabelSize(.04, "XY");
 	const char* kinetic_variable_plot = "met";
-	if (argc > 1) kinetic_variable_plot = argv[1];
+	//one should specify event_name(namely the operator name) and the value used for the Wilson Coefficient
+	const char* event_name;
+	const char* wc;
+	if (argc > 1){
+		kinetic_variable_plot = argv[1];
+		event_name=argv[2];
+		wc=argv[3];
+	}
+	std::string wc_string(wc);
+	replace(wc_string, ".", "p");
+	float wilson_coeff=stof(wc);
+	cout << wc_string <<"\n"<<wilson_coeff<<endl;
 
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
@@ -72,8 +91,8 @@ int main (int argc, char** argv)
 	files.push_back(f_deltaphijj);
 	files.push_back(f_noshape);
 
-	string name_ntuples[] = {"sm","lin","quad"};
-	string name_global_numbers[] = {"sm_nums","lin_nums","quad_nums"};
+	string name_ntuples[] = {"sm","quad","lin"};
+	string name_global_numbers[] = {"sm_nums","quad_nums","lin_nums"};
 
 	//the last two variables are actually "deltaetajj" and "deltaphijj", "met" is just to read an existing branch ("deltaetajj"
 	//and "deltaphijj" are obtained from the other angular distributions)
@@ -92,7 +111,7 @@ int main (int argc, char** argv)
 	string line;
 	float RMS_array[13];
 	int i=0;
-	ifstream file("OPERATOR_rms.txt");
+	ifstream file(string(event_name)+"_"+string(wc_string)+".txt");
 	if(file.is_open()){
 		while(getline(file,line)){
 			RMS_array[i]=stof(line);
@@ -155,7 +174,8 @@ int main (int argc, char** argv)
 
 	vector<TH1F> histos[14];
 	float integrals[14][3];
-	TFile* myfile = new TFile("/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/VBS_e+_mu+.root");
+	string path="/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/"+string(event_name)+"_"+string(wc_string)+".root";
+	TFile* myfile = new TFile(path.c_str());
 
 	for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) // sm, lin, quad
 	{
@@ -205,8 +225,8 @@ int main (int argc, char** argv)
 
 			histo->Scale(normalization);
 
-			if (ntuple_number == 1) histo->Scale(1./0.3);  //linear term
-			if (ntuple_number == 2) histo->Scale(1./(0.3*0.3));  //quadratic term
+			if (ntuple_number == 1) histo->Scale(1./wilson_coeff);  //linear term
+			if (ntuple_number == 2) histo->Scale(1./(wilson_coeff*wilson_coeff));  //quadratic term
 
 			//overflow bin events moved in the last bin
 			histo->SetBinContent(histo->GetNbinsX(), histo->GetBinContent(histo->GetNbinsX()) + histo->GetBinContent(histo->GetNbinsX() + 1));
