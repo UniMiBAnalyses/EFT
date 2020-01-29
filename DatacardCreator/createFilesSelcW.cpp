@@ -44,14 +44,16 @@ int main (int argc, char** argv)
 	gStyle->SetLabelSize(.04, "XY");
 	const char* kinetic_variable_plot = "met";
 	//one should specify event_name(namely the operator name) and the value used for the Wilson Coefficient
-	const char* event_name;
+    const char* OPERATOR;
+    const char* event_name;
 	const char* wc;
 	if (argc > 1){
 		kinetic_variable_plot = argv[1];
-		event_name=argv[2];
-		wc=argv[3];
+		OPERATOR=argv[2];
+        event_name=argv[3];
+		wc=argv[4];
 	}
-	std::string wc_string(wc);
+	string wc_string(wc);
 	replace(wc_string, ".", "p");
 	float wilson_coeff=stof(wc);
 	cout << wc_string <<"\n"<<wilson_coeff<<endl;
@@ -111,7 +113,8 @@ int main (int argc, char** argv)
 	string line;
 	float RMS_array[13];
 	int i=0;
-	ifstream file(string(event_name)+"_"+string(wc_string)+".txt");
+    string filename=string(OPERATOR)+"_"+string(event_name)+"_"+wc_string+"_rms.txt";
+	ifstream file(filename.c_str());
 	if(file.is_open()){
 		while(getline(file,line)){
 			RMS_array[i]=stof(line);
@@ -174,7 +177,7 @@ int main (int argc, char** argv)
 
 	vector<TH1F> histos[14];
 	float integrals[14][3];
-	string path="/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/"+string(event_name)+"_"+string(wc_string)+".root";
+    string path="/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/"+string(OPERATOR)+"_"+string(event_name)+"_"+wc_string+".root";
 	TFile* myfile = new TFile(path.c_str());
 
 	for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) // sm, lin, quad
