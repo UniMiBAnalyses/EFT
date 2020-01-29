@@ -5,7 +5,7 @@ in the root file "ntuple_RcW_0p3_HS_2.root" (EFT 6th-order operator: Q_W), two d
 Preselections are applied. Every root file contains three histograms, which represent the SM term ("histo_linear"),
 the linear term ("histo_linear") and the quadratic term ("histo_quadratic") of the total EFT distribution.
 
-"./createFilesSelcW variable" plots "variable" with a test value of cW
+"./createFilesSelcW variable OPERATOR event_name wilson_coeff" plots "variable" with a test value of cW
 
 c++ -o createFilesSelcW createFilesSelcW.cpp `root-config --glibs --cflags`
 
@@ -186,6 +186,7 @@ int main (int argc, char** argv)
 		float cross_section = global_numbers->GetBinContent(1);
 		float sum_weights_total = global_numbers->GetBinContent(2);
 		float sum_weights_selected = global_numbers->GetBinContent(3);
+        cout <<"xs:"<< cross_section << "\nsum_weights_tot:"<<sum_weights_total<<"\nsum_weights_selected"<<sum_weights_selected<<endl;
 		float luminosity = 100;
 		float normalization = cross_section*luminosity/sum_weights_total;
 

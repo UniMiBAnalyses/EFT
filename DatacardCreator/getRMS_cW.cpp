@@ -6,7 +6,7 @@ To create the total EFT distribution a realistic value of cW is used (cW = 0.01)
 
 c++ -o getRMS_cW getRMS_cW.cpp `root-config --glibs --cflags`
 
-es) ./getRMS_cW
+es) ./getRMS_cW OPERATOR event_name wilson_coeff
 
 */
 
@@ -113,7 +113,9 @@ int main (int argc, char** argv)
 				if (min > *min_element(values[distr_number].begin(), values[distr_number].end()))
 					min = *min_element(values[distr_number].begin(), values[distr_number].end());
 			}
-
+            //we want to store this min, max in order to use this information in other histos
+            file_min_max << min<<endl;
+            file_min_max << max <<endl;
 			TH1F* sm = new TH1F ("sm", "sm", Nbins, min, max);
 			TH1F* lin = new TH1F ("int", "int", Nbins, min, max);
 			TH1F* quad = new TH1F ("bsm", "bsm", Nbins, min, max);
@@ -163,7 +165,7 @@ int main (int argc, char** argv)
 
 			//good visualization
 			cout << RMS <<endl;
-			file << RMS <<endl;
+			file_rms << RMS <<endl;
 
 			//bad visualization (to copy the values)
 			/*if (k != 12) cout << RMS << ", ";

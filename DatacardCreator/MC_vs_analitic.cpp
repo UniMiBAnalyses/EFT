@@ -1,6 +1,6 @@
 /*
 Plots the differences between the analitic distributions (obtained with scaling relations from
-the HS ntuple ntuple_RcW_0p3_HS.root) and the MC distributions (ntuple_RcW_0p05.root,
+the HighStatistics ntuple ntuple_RcW_0p3_HS.root) and the MC distributions (ntuple_RcW_0p05.root,
 ntuple_RcW_0p1.root, ntuple_RcW_0p4.root, ntuple_RcW_1.root). The SM distributions are built
 from the HS ntuple ntuple_SMlimit_HS.root. No preselections are applied.
 
@@ -31,28 +31,28 @@ using namespace std ;
 float weightedMean (vector<float> values, vector<float> errors);
 float errorWeightedMean (vector<float> errors);
 
-int main (int argc, char** argv) 
+int main (int argc, char** argv)
 {
 	gStyle->SetLabelSize(.04, "XY");
 	gStyle->SetOptStat(0);
 	TGaxis::SetMaxDigits(2);
 	const char* kinetic_variable; //possible variables: met, mjj, mll, ptl1, ptl2
 	const char* kinetic_variable_tex;
-	if (argc == 1) 
+	if (argc == 1)
 	{
 		kinetic_variable = "met";
 	}
-	else 
+	else
 	{
 		kinetic_variable = argv[1];
 	}
-		
+
 	TH1::SetDefaultSumw2();
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,800);
 	TCanvas* cnv2 = new TCanvas("cnv2","cnv2",0,0,1200,800);
 	TCanvas* cnv3 = new TCanvas("cnv3","cnv3",0,0,1200,800);
-	
+
 	cnv->Divide(2,2);
 	cnv2->Divide(2,2);
 	cnv3->Divide(2,2);
@@ -60,20 +60,20 @@ int main (int argc, char** argv)
 	string cW[] = {"0p3","0p05","0p1","0p4","1"};
 	string titles[] = {"c_{W} = 0.05", "c_{W} = 0.1", "c_{W} = 0.3","c_{W} = 0.4", "c_{W} = 1"};
 	string kinetic_variables[] = {"met","mjj","mll","ptl1","ptl2"};
-	string kinetic_variables_tex[] = {"MET","m_{jj}","m_{ll}","p_{tl1} ","p_{tl2} "};	
-	
+	string kinetic_variables_tex[] = {"MET","m_{jj}","m_{ll}","p_{tl1} ","p_{tl2} "};
+
 	vector<TH1F*> histos, histos_analitic;
 	float max;
 
 	//maxima chosen for the 5 distributions (met, mjj, mll, ptl1, ptl2) with cW = 0.3, used
 	//to create the others with scaling relations
-	float maxima[] = {1620, 8600, 1950, 1250, 600}; 
+	float maxima[] = {1620, 8600, 1950, 1250, 600};
 
 	//RMS values for the 5 kinetic variables' distributions (see getRMScW.cpp)
 	float RMS_array[5] = {87.2333, 953.58, 116.004, 70.2788, 31.7565};
 	int Nbins;
 
-	for (int i = 0; i < 5; i++) 	
+	for (int i = 0; i < 5; i++)
 	{
 		kinetic_variable_tex = kinetic_variables_tex[i].c_str();
 		if (kinetic_variable == kinetic_variables[i]) //finds the input kinetic variable
@@ -81,10 +81,10 @@ int main (int argc, char** argv)
 			max = maxima[i];
 
 			//bins' width: (1/3)*RMS
-			Nbins = floor(max/((1./3.)*RMS_array[i]));	
+			Nbins = floor(max/((1./3.)*RMS_array[i]));
 			break;
 		}
-	}	
+	}
 
 	//arrays to contain the 'dispersions' of the difference distributions over the y axis
 	//(extimated as the weighted mean of bin contents)
@@ -92,7 +92,7 @@ int main (int argc, char** argv)
 	float dispersion_lin[4];
 	float dispersion_tot[4]; //'tot' stands for INT (lin) + BSM (quad)
 
-	for (int k = 0; k < 5; k++) // cW = 0.3, 0.05, 0.1, 0.4, 1. 
+	for (int k = 0; k < 5; k++) // cW = 0.3, 0.05, 0.1, 0.4, 1.
 	{
 		string name_files[3];
 		if (k != 0) //for cW = 0.3 high statistics (HS)
@@ -101,7 +101,7 @@ int main (int argc, char** argv)
 			name_files[1] = "ntuple_RcW_" + cW[k] + ".root";
 			name_files[2] = "ntuple_RcW_" + cW[k] + ".root";
 		}
-		else 
+		else
 		{
 			name_files[0] = "ntuple_SMlimit_HS.root";
 			name_files[1] = "ntuple_RcW_" + cW[k] + "_HS.root";
@@ -112,29 +112,29 @@ int main (int argc, char** argv)
 		string name_global_numbers[] = {"SSeu_SMlimit_nums", "SSeu_RcW_bsm_"+ cW[k] +"_nums", "SSeu_RcW_int_" + cW[k] + "_nums"};
 		vector<float> values;
 		vector<float> weights;
-		
-		
+
+
 		for (int j = 0; j < 3; j++) // j = 0,1,2: SM simulation, BSM (quadratic term), BSM (interference term)
-		{			
+		{
 			TFile* myfile = new TFile(name_files[j].c_str());
 			TTreeReader reader (name_ntuples[j].c_str(), myfile);
 			TTreeReaderValue<float> var (reader, kinetic_variable);
 			TTreeReaderValue<float> weight (reader, "w"); //weights branch
-			TH1F* histo = new TH1F ("histo", "histo", Nbins, 0, max);			
+			TH1F* histo = new TH1F ("histo", "histo", Nbins, 0, max);
 
-			while (reader.Next ()) 
-			{	
+			while (reader.Next ())
+			{
 				histo->Fill(*var,*weight);
-			}		
+			}
 
 			TH1F* global_numbers = (TH1F*) myfile->Get(name_global_numbers[j].c_str());
 			float cross_section = global_numbers->GetBinContent(1);
 			float sum_weights_total = global_numbers->GetBinContent(2);
 			float sum_weights_selected = global_numbers->GetBinContent(3);
 			float luminosity = 100;
-			float normalization = cross_section*luminosity/sum_weights_total;	
+			float normalization = cross_section*luminosity/sum_weights_total;
 
-			/*for (int i = 0; i < values.size(); i++) 
+			/*for (int i = 0; i < values.size(); i++)
 			{
 				histo->Fill(values[i],weights[i]);
 			}*/
@@ -142,11 +142,11 @@ int main (int argc, char** argv)
 			histo->Scale(normalization);
 			histo->SetBinContent(histo->GetNbinsX(), histo->GetBinContent(histo->GetNbinsX()) + histo->GetBinContent(histo->GetNbinsX() + 1));
 			histo->SetBinContent(histo->GetNbinsX() + 1, 0.);
-			
-			if (k == 0) histos_analitic.push_back(histo); 	
-			else histos.push_back(histo);					
-					
-			values.clear();		
+
+			if (k == 0) histos_analitic.push_back(histo);
+			else histos.push_back(histo);
+
+			values.clear();
 			weights.clear();
 		}
 
@@ -159,7 +159,7 @@ int main (int argc, char** argv)
 
 			quadratic_analitic->Scale(cW_values[k]*cW_values[k]/(0.3*0.3)); // quadratic scaling relation
 			linear_analitic->Scale(cW_values[k]/0.3);           // linear scaling relation
-	
+
 			TH1F* quad_difference = new TH1F(*histos[1] - *quadratic_analitic);
 			TH1F* lin_difference = new TH1F(*histos[2] - *linear_analitic);
 			TH1F* quad_plus_lin_difference = new TH1F(*histos[1] + *histos[2] - *quadratic_analitic - *linear_analitic);
@@ -171,11 +171,11 @@ int main (int argc, char** argv)
 			vector<float> bin_contents_tot;
 			vector<float> bin_errors_tot;
 
-			for (int i = 1; i <= quad_difference->GetNbinsX(); i++) 
+			for (int i = 1; i <= quad_difference->GetNbinsX(); i++)
 			{
 				bin_contents_quad.push_back(quad_difference->GetBinContent(i));
 				bin_errors_quad.push_back(quad_difference->GetBinError(i));
-				
+
 				bin_contents_lin.push_back(lin_difference->GetBinContent(i));
 				bin_errors_lin.push_back(lin_difference->GetBinError(i));
 
@@ -183,7 +183,7 @@ int main (int argc, char** argv)
 				bin_errors_tot.push_back(quad_plus_lin_difference->GetBinError(i));
 			}
 
-			//computation of 'dispersions' in the y axis as the weighted mean of bin contents					
+			//computation of 'dispersions' in the y axis as the weighted mean of bin contents
 			dispersion_quad[k-1] = errorWeightedMean(bin_errors_quad);
 			dispersion_lin[k-1] = errorWeightedMean(bin_errors_lin);
 			dispersion_tot[k-1] = errorWeightedMean(bin_errors_tot);
@@ -194,7 +194,7 @@ int main (int argc, char** argv)
 			string title_quad = string("MC - analitic (quadratic distribution, ") + titles[k] + string(")");
 			quad_difference->SetTitle(title_quad.c_str());
 			string xlabel = string(kinetic_variable_tex) + string(" (GeV)");
-			quad_difference->GetXaxis()->SetTitle(xlabel.c_str());	
+			quad_difference->GetXaxis()->SetTitle(xlabel.c_str());
 			quad_difference->GetXaxis()->SetTitleSize(.05);
 			quad_difference->GetXaxis()->SetTitleOffset(0.92);
  			quad_difference->GetYaxis()->SetTitle("#Delta events");
@@ -206,7 +206,7 @@ int main (int argc, char** argv)
 			ss_error_quad << dispersion_quad[k-1];
 			string mean_quad = ss_mean_quad.str() + string(" #pm ") + ss_error_quad.str();
 			string legend_content_quad = "#splitline{Weighted mean of bin contents:}{" + mean_quad + "}";
-			legend_quad->SetHeader(legend_content_quad.c_str(),""); 
+			legend_quad->SetHeader(legend_content_quad.c_str(),"");
 			legend_quad->Draw();
 			cnv->Modified();
 			cnv->Update();
@@ -228,7 +228,7 @@ int main (int argc, char** argv)
 			ss_error_lin << dispersion_lin[k-1];
 			string mean_lin = ss_mean_lin.str() + string(" #pm ") + ss_error_lin.str();
 			string legend_content_lin = "#splitline{Weighted mean of bin contents:}{" + mean_lin + "}";
-			legend_lin->SetHeader(legend_content_lin.c_str() ,""); 
+			legend_lin->SetHeader(legend_content_lin.c_str() ,"");
 			legend_lin->Draw();
 			cnv2->Modified();
 			cnv2->Update();
@@ -250,7 +250,7 @@ int main (int argc, char** argv)
 			ss_error_tot << dispersion_tot[k-1];
 			string mean_tot = ss_mean_tot.str() + string(" #pm ") + ss_error_tot.str();
 			string legend_content_tot = "#splitline{Weighted mean of bin contents:}{" + mean_tot + "}";
-			legend_tot->SetHeader(legend_content_tot.c_str() ,""); 
+			legend_tot->SetHeader(legend_content_tot.c_str() ,"");
 			legend_tot->Draw();
 			cnv3->Modified();
 			cnv3->Update();
@@ -279,7 +279,7 @@ int main (int argc, char** argv)
 	cnv4->cd();
 	dispersion_vs_cW_quad->SetMarkerStyle(20);
 	dispersion_vs_cW_quad->SetMarkerSize(1.1);
-	dispersion_vs_cW_quad->SetMarkerColor(kBlack);	
+	dispersion_vs_cW_quad->SetMarkerColor(kBlack);
 	dispersion_vs_cW_quad->Draw("AP");
 	dispersion_vs_cW_quad->Fit("pol2"); //expected quadratic trend
 	dispersion_vs_cW_quad->GetXaxis()->SetTitle("c_{W}");
@@ -297,7 +297,7 @@ int main (int argc, char** argv)
 	cnv5->cd();
 	dispersion_vs_cW_lin->SetMarkerStyle(20);
 	dispersion_vs_cW_lin->SetMarkerSize(1.1);
-	dispersion_vs_cW_lin->SetMarkerColor(kBlack);	
+	dispersion_vs_cW_lin->SetMarkerColor(kBlack);
 	dispersion_vs_cW_lin->Draw("AP");
 	dispersion_vs_cW_lin->Fit("pol1"); //expected linear trend
 	dispersion_vs_cW_lin->GetXaxis()->SetTitle("c_{W}");
@@ -332,10 +332,10 @@ int main (int argc, char** argv)
 float weightedMean (vector<float> values, vector<float> errors)
 {
 	if (values.size() != errors.size())	return -1;
-	
+
 	float weighted_sum = 0.;
 	float sum_of_weights = 0.;
-	for (int i = 0; i < values.size(); i++) 
+	for (int i = 0; i < values.size(); i++)
 	{
 		weighted_sum += values[i]/(errors[i]*errors[i]);
 		sum_of_weights += 1./(errors[i]*errors[i]);
@@ -346,10 +346,9 @@ float weightedMean (vector<float> values, vector<float> errors)
 float errorWeightedMean (vector<float> errors)
 {
 	float sum_of_weights = 0.;
-	for (int i = 0; i < errors.size(); i++) 
+	for (int i = 0; i < errors.size(); i++)
 	{
 		sum_of_weights += 1./(errors[i]*errors[i]);
-	}		
+	}
 	return 1./sqrt(sum_of_weights);
 }
-
