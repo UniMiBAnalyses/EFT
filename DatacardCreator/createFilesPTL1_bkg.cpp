@@ -29,6 +29,13 @@ c++ -o createFilesPTL1_bkg createFilesPTL1_bkg.cpp `root-config --glibs --cflags
 
 using namespace std ;
 
+bool replace(std::string& str, const std::string& from, const std::string& to) {
+    size_t start_pos = str.find(from);
+    if(start_pos == std::string::npos)
+        return false;
+    str.replace(start_pos, from.length(), to);
+    return true;
+}
 
 int main (int argc, char** argv)
 {
@@ -36,6 +43,19 @@ int main (int argc, char** argv)
 	TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 	TCanvas* cnv = new TCanvas("cnv","cnv",0,0,1200,400);
 	cnv->Divide(2,1);
+
+	const char* OPERATOR;
+    const char* event_name;
+	const char* wc;
+	if (argc > 1){
+		OPERATOR=argv[1];
+        event_name=argv[2];
+		wc=argv[3];
+	}
+	string wc_string(wc);
+	replace(wc_string, ".", "p");
+	float wilson_coeff=stof(wc);
+	cout << wc_string <<"\n"<<wilson_coeff<<endl;
 
 	TH1::SetDefaultSumw2();
 	cout << setprecision(7) << fixed;
@@ -72,12 +92,26 @@ int main (int argc, char** argv)
 	string histo_names[] = {"histo_sm", "histo_linear", "histo_quadratic"};
 	string histo_titles[] = {"SM", "LIN", "QUAD"};
 
+
+	//reading RMS values
+	string line;
+	float RMS_array[13];
+	int i=0;
+	string filename=string(OPERATOR)+"_"+string(event_name)+"_"+wc_string+"_rms.txt";
+	ifstream file(filename.c_str());
+	if(file.is_open()){
+		while(getline(file,line)){
+			RMS_array[i]=stof(line);
+			i++;
+		}
+		file.close();
+	}
 	//mins and max of PTL1 distribution
 	float min = 25;
 	float max = 1250;
 	float first_limit = 900; //from here bin_width*2
 	float second_limit = 1250; //from here bin_width*4
-	float RMS = 70.2788; //RMS of PTL1 distribution (see getRMScW.cpp)
+	float RMS = RMS_array[3]; //RMS of PTL1 distribution (see getRMScW.cpp)
 	vector<float> bins_edges_vector;
 	bins_edges_vector.push_back(min);
 	while (true)
@@ -108,7 +142,8 @@ int main (int argc, char** argv)
 
 	vector<TH1F> histos;
 	float integrals[3];
-	TFile* myfile = new TFile("/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/VBS_e+_mu+.root");
+	string path="/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/"+string(OPERATOR)+"_"+string(event_name)+"_"+wc_string+".root";
+	TFile* myfile = new TFile(path.c_str());
 
 
 	for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) // sm, int, bsm
@@ -213,8 +248,8 @@ int main (int argc, char** argv)
 
 
 		//prints the integrals
-		/*cout << "x0_"<< var_bkg + 1 << "--------------------------------------------" << endl;
-		cout << integrals[0] << "\t" << integrals[1] << "\t" << integrals[2] << "\t" << bkg->Integral() << endl;*/
+		cout << "x0_"<< var_bkg + 1 << "--------------------------------------------" << endl;
+		cout << integrals[0] << "\t" << integrals[1] << "\t" << integrals[2] << "\t" << bkg->Integral() << endl;
 
 
 		//PLOTS

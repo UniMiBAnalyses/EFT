@@ -93,8 +93,8 @@ int main (int argc, char** argv)
 	files.push_back(f_deltaphijj);
 	files.push_back(f_noshape);
 
-	string name_ntuples[] = {"sm","quad","lin"};
-	string name_global_numbers[] = {"sm_nums","quad_nums","lin_nums"};
+	string name_ntuples[] = {"sm","lin","quad",};
+	string name_global_numbers[] = {"sm_nums","lin_nums","quad_nums",};
 
 	//the last two variables are actually "deltaetajj" and "deltaphijj", "met" is just to read an existing branch ("deltaetajj"
 	//and "deltaphijj" are obtained from the other angular distributions)
@@ -232,6 +232,7 @@ int main (int argc, char** argv)
 			if (ntuple_number == 2) histo->Scale(1./(wilson_coeff*wilson_coeff));  //quadratic term
 
 			//overflow bin events moved in the last bin
+            //last bin content=last bin content + content of overflow bin
 			histo->SetBinContent(histo->GetNbinsX(), histo->GetBinContent(histo->GetNbinsX()) + histo->GetBinContent(histo->GetNbinsX() + 1));
 			histo->SetBinContent(histo->GetNbinsX() + 1, 0.);
 
