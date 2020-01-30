@@ -73,8 +73,9 @@ int main (int argc, char** argv)
 
 	//opening text file to write rms in it
 
-	ofstream file (string(OPERATOR)+"_"+string(event_name)+"_"+wc_string+"_rms.txt");
-	if(file.is_open()){
+	ofstream file_rms (string(OPERATOR)+"_"+string(event_name)+"_"+wc_string+"_rms.txt");
+    ofstream file_min_max (string(OPERATOR)+"_"+string(event_name)+"_"+wc_string+"_min_max.txt");
+	if(file_rms.is_open()){
 		for (int var_number = 0; var_number < 13; var_number++) //for loop to scan all the variables
 		{
 			vector<float> values[3]; // to contain data of SM, QUAD and LIN distributions
@@ -114,8 +115,7 @@ int main (int argc, char** argv)
 					min = *min_element(values[distr_number].begin(), values[distr_number].end());
 			}
             //we want to store this min, max in order to use this information in other histos
-            file_min_max << min<<endl;
-            file_min_max << max <<endl;
+            file_min_max << min <<"\t"<< max <<endl;
 			TH1F* sm = new TH1F ("sm", "sm", Nbins, min, max);
 			TH1F* lin = new TH1F ("int", "int", Nbins, min, max);
 			TH1F* quad = new TH1F ("bsm", "bsm", Nbins, min, max);
@@ -142,8 +142,8 @@ int main (int argc, char** argv)
 
 				//rescaling QUAD and LIN distributions with a realistic value of the Wilson coefficient
 				//this is for a wilson coefficient=0.3 and getting 0.1
-				if (distr_number == 1) histos[distr_number]->Scale(0.1/wilson_coeff);
-				if (distr_number == 2) histos[distr_number]->Scale((0.1)/(wilson_coeff*wilson_coeff));
+				if (distr_number == 1) histos[distr_number]->Scale(1/wilson_coeff);
+				if (distr_number == 2) histos[distr_number]->Scale((1)/(wilson_coeff*wilson_coeff));
 
 				histos[distr_number]->ResetStats();
 
@@ -177,7 +177,8 @@ int main (int argc, char** argv)
 			delete quad;
 			delete lin;
 		}
-		file.close();
+		file_rms.close();
+        file_min_max.close();
 	}
 
 

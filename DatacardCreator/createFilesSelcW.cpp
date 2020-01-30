@@ -109,25 +109,45 @@ int main (int argc, char** argv)
 	float min[] = {30, 500, 20, 25, 20, 30, 30, -5., -5., -M_PI, -M_PI, 2.5, 0, 0};
 	float max[] = {1620, 8600, 1950, 1250, 600, 2000, 1100, 5., 5., M_PI, M_PI, 10., M_PI, 2};
 
+
 	//RMS values for the 11 kinetic variables' distributions (see getRMS_cW.cpp)
 	string line;
 	float RMS_array[13];
 	int i=0;
-    string filename=string(OPERATOR)+"_"+string(event_name)+"_"+wc_string+"_rms.txt";
-	ifstream file(filename.c_str());
-	if(file.is_open()){
-		while(getline(file,line)){
+    string filename_rms=string(OPERATOR)+"_"+string(event_name)+"_"+wc_string+"_rms.txt";
+	ifstream file_rms(filename_rms.c_str());
+	if(file_rms.is_open()){
+		while(getline(file_rms,line)){
 			RMS_array[i]=stof(line);
 			i++;
 		}
-		file.close();
+		file_rms.close();
 	}
+    string filename_min_max=string(OPERATOR)+"_"+string(event_name)+"_"+wc_string+"_min_max.txt";
+	ifstream file_min_max(filename_min_max.c_str());
+    i=0;
+    float mi,ma;
+    while(true){
+        file_min_max >> mi >> ma;
+        min[i]=mi;
+        max[i]=ma;
+        cout << min[i] << max[i] <<endl;
+        if(file_min_max.eof()==true){
+            break;
+        }
+        i++;
+    }
+
 	//float RMS_array[] = {87.2333, 953.58, 116.004, 70.2788, 31.7565, 139.601, 88.028, 1.98489, 2.35187, 1.81397, 1.81276, 1.99129, 0.806861};
 
 	//variable width binning for the first 7 variables: met, mjj, mll, ptl1, ptl2, ptj1 (fixed width binning for the angular variables)
 	vector<float> bins_edges_vectors[14];
-	float first_limit[] = {1000, 8000, 1350, 900, 380, 1600, 900}; //from here bin_width*2
-	float second_limit[] = {1300, 8600, 1700, 1250, 430, 1800, 1000}; //from here bin_width*4
+	float first_limit[] = {300, 8000, 1350, 900, 380, 1600, 900}; //from here bin_width*2
+	float second_limit[] = {400, 8600, 1700, 1250, 430, 1800, 1000}; //from here bin_width*4
+    for(int i=0;i<7;i++){
+        first_limit[i]=(max[i]-min[i])*1/2+min[i];
+        second_limit[i]=(max[i]-min[i])*3/4+min[i];
+    }
 	int Nbins[14];
 	int var_number_plot = 0;
 
