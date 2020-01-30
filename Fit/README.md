@@ -21,7 +21,7 @@ Install "combine":
 
 
 
-1) install Combine
+A) install Combine
 
     cmsrel CMSSW_10_2_13
     cd CMSSW_10_2_13/src
@@ -44,13 +44,13 @@ NB:  Move between a folder and the other. The last one where you run
 is the one that is used.
 
 
-2) install model
+B) install model
 
     cd $CMSSW_BASE/src/HiggsAnalysis
     
     git clone git@github.com:amassiro/AnalyticAnomalousCoupling.git
 
-3) compile
+C) compile
 
     scramv1 b -j 20
     
@@ -58,12 +58,12 @@ is the one that is used.
     
 Now fit and get results:
 
-1) text2workspace
+A) text2workspace
 
                                                              folder                    file.py             object defined in the file.py
     text2workspace.py        datacard.txt     -P HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:analiticAnomalousCoupling                 --PO=k_my,r  -o      model_test.root   
 
-2) fit
+B) fit
 
 Simulate with k_my set to 1 and r=1
 
@@ -77,7 +77,7 @@ To simulate "sm" part, k_my == 0 (this is how we simulate the expected result wi
         --redefineSignalPOIs k_my --freezeParameters r --setParameters r=1,k_my=0   --setParameterRanges k_my=-20,20   
     
 
-Plot:
+C) plot:
 
     cd $CMSSW_BASE/src/HiggsAnalysis/AnalyticAnomalousCoupling/test/
 
