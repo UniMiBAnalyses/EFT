@@ -1,4 +1,4 @@
-// c++  -g -o Discrepanza     Discrepanza.cpp `root-config --libs --glibs --cflags`
+// c++  -g -o sensitivity sensitivity.cpp `root-config --libs --glibs --cflags`
 //./Discrepanza
 #include "LHEF.h"
 #include <iostream>
@@ -44,7 +44,7 @@ class LHEreader
     std::vector<std::pair<int, TLorentzVector&> > m_je ; // partons (q+g)
 
   private:
-    std::ifstream m_ifs ;  
+    std::ifstream m_ifs ;
     LHEF::Reader  m_reader ;
     bool          m_makeClasses ;
 
@@ -64,16 +64,16 @@ LHEreader::LHEreader (std::string inputFileName, bool makeClasses):
   std::cout << "[LHEreader] preparing sub-vectors " << makeClasses << "\n" ;
 }
 
-/** 
+/**
 read the event with the LHEF class and produces collections of paris (pdgid, TLorentzVector)
 */
-bool 
+bool
 LHEreader::readEvent ()
 {
   bool reading = m_reader.readEvent () ;
   if (!reading) return reading ;
   m_particles.clear ();
-  if (m_makeClasses) 
+  if (m_makeClasses)
     {
       m_el.clear () ;
       m_mu.clear () ;
@@ -102,7 +102,7 @@ LHEreader::readEvent ()
       if (m_reader.hepeup.ISTUP.at (iPart) != 1) continue ; //AT Le particelle uscenti sono contrassegante da ISTUP = 1
 
       int partType = m_reader.hepeup.IDUP.at (iPart) ;
-      TLorentzVector particle 
+      TLorentzVector particle
         (
           m_reader.hepeup.PUP.at (iPart).at (0), //PG px
           m_reader.hepeup.PUP.at (iPart).at (1), //PG py
@@ -112,7 +112,7 @@ LHEreader::readEvent ()
       m_particles.push_back (std::pair<int, TLorentzVector> (partType, particle)) ;
       if (m_makeClasses)
         {
-          if (abs (partType) < 6) 
+          if (abs (partType) < 6)
             {
               m_qu.push_back (std::pair<int, TLorentzVector&> (partType, m_particles.back ().second)) ;
               m_je.push_back (std::pair<int, TLorentzVector&> (partType, m_particles.back ().second)) ;
@@ -120,15 +120,15 @@ LHEreader::readEvent ()
           else if (abs (partType) == 11 || abs (partType) == 13 || abs (partType) == 15)
             {
               m_le.push_back (std::pair<int, TLorentzVector&> (partType, m_particles.back ().second)) ;
-              switch(abs (partType)) 
+              switch(abs (partType))
                 {
                   case 11 :
                     m_el.push_back (std::pair<int, TLorentzVector&> (partType, m_particles.back ().second)) ;
                     break ;
-                  case 13 : 
+                  case 13 :
                     m_mu.push_back (std::pair<int, TLorentzVector&> (partType, m_particles.back ().second)) ;
                     break ;
-                  case 15 : 
+                  case 15 :
                     m_ta.push_back (std::pair<int, TLorentzVector&> (partType, m_particles.back ().second)) ;
                     break ;
                 }
@@ -136,15 +136,15 @@ LHEreader::readEvent ()
           else if (abs (partType) == 12 || abs (partType) == 14 || abs (partType) == 16)
             {
               m_vs.push_back (std::pair<int, TLorentzVector&> (partType, m_particles.back ().second)) ;
-              switch(abs (partType)) 
+              switch(abs (partType))
                 {
                   case 12 :
                     m_ve.push_back (std::pair<int, TLorentzVector&> (partType, m_particles.back ().second)) ;
                     break ;
-                  case 14 : 
+                  case 14 :
                     m_vm.push_back (std::pair<int, TLorentzVector&> (partType, m_particles.back ().second)) ;
                     break ;
-                  case 16 : 
+                  case 16 :
                     m_vT.push_back (std::pair<int, TLorentzVector&> (partType, m_particles.back ().second)) ;
                     break ;
                 }
@@ -187,14 +187,14 @@ int main (int argc, char ** argv){
   TNtuple mll ("mll", "mll", "el:ve:mu:vm:mLep:mQuark:angLep:PsRap:MET:ze:zm:lep");
   TNtuple qll ("qll", "qll", "qll");
 
-  string Name1 = "unweighted_events_SM.lhe";
+  string Name1 = "/Users/giorgio/madgraph_generations/HWB/VBS_e+_mu+_0p02_sm/Events/run_01/unweighted_events.lhe";
   LHEreader reader (Name1) ;
 
   //PG loop over events
   while (reader.readEvent ())
     {
       if (maxNum > 0 && reader.m_evtNum > maxNum) break;
-      if (reader.m_el.size () != 1) continue; 
+      if (reader.m_el.size () != 1) continue;
       if (reader.m_ve.size () != 1) continue;
       if (reader.m_mu.size () != 1) continue;
       if (reader.m_vm.size () != 1) continue;
@@ -202,9 +202,9 @@ int main (int argc, char ** argv){
       if (reader.m_le.size () != 2) continue ;
       TLorentzVector dilepton = reader.m_le.at (0).second + reader.m_le.at (1).second;
       TLorentzVector diquark = reader.m_qu.at (0).second + reader.m_qu.at (1).second;
-      double DiffPsRap = reader.m_qu.at (0).second.PseudoRapidity() - reader.m_qu.at (1).second.PseudoRapidity(); /*AT Differenza tra le psedudorapidità 
+      double DiffPsRap = reader.m_qu.at (0).second.PseudoRapidity() - reader.m_qu.at (1).second.PseudoRapidity(); /*AT Differenza tra le psedudorapidità
         dei quark*/
-      double AddPsRap = reader.m_qu.at (0).second.PseudoRapidity() + reader.m_qu.at (1).second.PseudoRapidity(); /*AT Somma tra le psedudorapidità 
+      double AddPsRap = reader.m_qu.at (0).second.PseudoRapidity() + reader.m_qu.at (1).second.PseudoRapidity(); /*AT Somma tra le psedudorapidità
         dei quark*/
       double MET = sqrt(reader.m_ve.at(0).second.Perp()*reader.m_ve.at(0).second.Perp()  +  reader.m_vm.at(0).second.Perp()*reader.m_vm.at(0).second.Perp());
       double z_e = (reader.m_el.at (0).second.PseudoRapidity() - (AddPsRap/2))/abs(DiffPsRap);
@@ -212,15 +212,15 @@ int main (int argc, char ** argv){
       double somma_lep = sqrt(reader.m_el.at(0).second.Perp()*reader.m_el.at(0).second.Perp()  +  reader.m_mu.at(0).second.Perp()*reader.m_mu.at(0).second.Perp());
 
 
-      if(dilepton.M() > 20 && 
-         diquark.M() > 500 && 
-         abs(DiffPsRap) > 2.5 && 
-         reader.m_qu.at (0).second.Perp() > 30 && 
-         reader.m_qu.at (1).second.Perp() > 30 && 
+      if(dilepton.M() > 20 &&
+         diquark.M() > 500 &&
+         abs(DiffPsRap) > 2.5 &&
+         reader.m_qu.at (0).second.Perp() > 30 &&
+         reader.m_qu.at (1).second.Perp() > 30 &&
          MET>40 &&
          abs(z_e) < 0.75 &&
          abs(z_m) < 0.75){
-            mll.Fill (reader.m_el.at(0).second.Perp(), reader.m_ve.at(0).second.Perp(), reader.m_mu.at(0).second.Perp(), 
+            mll.Fill (reader.m_el.at(0).second.Perp(), reader.m_ve.at(0).second.Perp(), reader.m_mu.at(0).second.Perp(),
               reader.m_vm.at(0).second.Perp(), dilepton.M (), diquark.M (), reader.m_le.at(0).second.Angle(reader.m_le.at(1).second.Vect()), abs(DiffPsRap)
               ,MET,z_e, z_m, somma_lep);
             qll.Fill(reader.m_qu.at(0).second.Perp());
@@ -233,7 +233,7 @@ int main (int argc, char ** argv){
     TNtuple mll_1 ("mll", "mll", "el:ve:mu:vm:mLep:mQuark:angLep:PsRap:MET:ze:zm:lep") ;
     TNtuple qll_1 ("qll", "qll", "qll");
 
-    Name1 = "unweighted_events_cW_0_3.lhe";
+    Name1 = "/Users/giorgio/madgraph_generations/HWB/VBS_e+_mu+_0p02_quad/Events/run_01/unweighted_events.lhe";
     LHEreader reader_1 (Name1) ;
 
 
@@ -241,7 +241,7 @@ int main (int argc, char ** argv){
     while (reader_1.readEvent ())
     {
       if (maxNum > 0 && reader_1.m_evtNum > maxNum) break;
-      if (reader_1.m_el.size () != 1) continue; 
+      if (reader_1.m_el.size () != 1) continue;
       if (reader_1.m_ve.size () != 1) continue;
       if (reader_1.m_mu.size () != 1) continue;
       if (reader_1.m_vm.size () != 1) continue;
@@ -249,9 +249,9 @@ int main (int argc, char ** argv){
       if (reader_1.m_le.size () != 2) continue ;
       TLorentzVector dilepton = reader_1.m_le.at (0).second + reader_1.m_le.at (1).second;
       TLorentzVector diquark = reader_1.m_qu.at (0).second + reader_1.m_qu.at (1).second;
-      double DiffPsRap = reader_1.m_qu.at (0).second.PseudoRapidity() - reader_1.m_qu.at (1).second.PseudoRapidity(); /*AT Differenza tra le psedudorapidità 
+      double DiffPsRap = reader_1.m_qu.at (0).second.PseudoRapidity() - reader_1.m_qu.at (1).second.PseudoRapidity(); /*AT Differenza tra le psedudorapidità
         dei quark*/
-      double AddPsRap = reader_1.m_qu.at (0).second.PseudoRapidity() + reader_1.m_qu.at (1).second.PseudoRapidity(); /*AT Somma tra le psedudorapidità 
+      double AddPsRap = reader_1.m_qu.at (0).second.PseudoRapidity() + reader_1.m_qu.at (1).second.PseudoRapidity(); /*AT Somma tra le psedudorapidità
         dei quark*/
       double MET = sqrt(reader_1.m_ve.at(0).second.Perp()*reader_1.m_ve.at(0).second.Perp() + reader_1.m_vm.at(0).second.Perp()
         *reader_1.m_vm.at(0).second.Perp());
@@ -259,16 +259,16 @@ int main (int argc, char ** argv){
       double z_m = (reader_1.m_mu.at (0).second.PseudoRapidity() - (AddPsRap/2))/abs(DiffPsRap);
       double somma_lep = sqrt(reader_1.m_el.at(0).second.Perp()*reader_1.m_el.at(0).second.Perp()  +  reader_1.m_mu.at(0).second.Perp()*reader_1.m_mu.at(0).second.Perp());
 
-      if(dilepton.M() > 20 && 
-         diquark.M() > 500 && 
-         abs(DiffPsRap) > 2.5 && 
-         reader_1.m_qu.at (0).second.Perp() > 30 && 
-         reader_1.m_qu.at (1).second.Perp() > 30 && 
+      if(dilepton.M() > 20 &&
+         diquark.M() > 500 &&
+         abs(DiffPsRap) > 2.5 &&
+         reader_1.m_qu.at (0).second.Perp() > 30 &&
+         reader_1.m_qu.at (1).second.Perp() > 30 &&
          MET>40 &&
          abs(z_e) < 0.75 &&
          abs(z_m) < 0.75){
-            mll_1.Fill (reader_1.m_el.at(0).second.Perp(), reader_1.m_ve.at(0).second.Perp(), reader_1.m_mu.at(0).second.Perp(), 
-              reader_1.m_vm.at(0).second.Perp(), dilepton.M (), diquark.M (), reader_1.m_le.at(0).second.Angle(reader_1.m_le.at(1).second.Vect()), 
+            mll_1.Fill (reader_1.m_el.at(0).second.Perp(), reader_1.m_ve.at(0).second.Perp(), reader_1.m_mu.at(0).second.Perp(),
+              reader_1.m_vm.at(0).second.Perp(), dilepton.M (), diquark.M (), reader_1.m_le.at(0).second.Angle(reader_1.m_le.at(1).second.Vect()),
               abs(DiffPsRap),MET, z_e, z_m, somma_lep);
             qll_1.Fill(reader_1.m_qu.at(0).second.Perp());
             qll_1.Fill(reader_1.m_qu.at(1).second.Perp());
@@ -348,7 +348,7 @@ int main (int argc, char ** argv){
     	k++;
     }
 
-    TGraph maxx(k, bin ,sum);  
+    TGraph maxx(k, bin ,sum);
     maxx.SetMarkerStyle(20);
     maxx.SetMarkerSize(0.8);
     maxx.SetMarkerColor(kBlack);
@@ -357,10 +357,10 @@ int main (int argc, char ** argv){
     maxx.GetYaxis() -> SetTitleSize(0.04);
     maxx.GetXaxis()-> SetTitle("P_{T} [leptons] (GeV/c^{2})");
     maxx.GetXaxis() -> CenterTitle();
-    maxx.GetXaxis() -> SetTitleOffset(1.25); 
-    maxx.GetXaxis() -> SetRangeUser(0,1300);       
+    maxx.GetXaxis() -> SetTitleOffset(1.25);
+    maxx.GetXaxis() -> SetRangeUser(0,1300);
     maxx.Draw("AP");
-    c3.Print("massimo.png");  
+    c3.Print("massimo.png");
 
 
 
@@ -368,9 +368,9 @@ int main (int argc, char ** argv){
 
     for(int j = 1; j <= 20; j++){
       double sigma_SM = 3.968924;
-      double sigma_EFT = 4.294595; 
-      double lum = 150; 
-       
+      double sigma_EFT = 4.294595;
+      double lum = 150;
+
       double w_SM = (sigma_SM * j* lum) / 1000000;
       string ww_SM;
       ostringstream convert_SM;
@@ -396,7 +396,7 @@ int main (int argc, char ** argv){
 
       //Selezioni
 
-     
+
       cout << "valore taglio: " << posit_SM.GetBinCenter(max - max_gr) << endl;
       double integrale_SM_selezioni = posit_SM.Integral(max - max_gr,max);
       double integrale_EFT_selezioni = posit_EFT.Integral(max - max_gr,max);
@@ -447,7 +447,7 @@ int main (int argc, char ** argv){
       double Totale_10_SM = sqrt((Err_SM * Err_SM) + (Sistematica_10_SM * Sistematica_10_SM));
       double Totale_10_EFT = sqrt((Err_EFT * Err_EFT) + (Sistematica_10_EFT * Sistematica_10_EFT));
       double Totale_20_SM = sqrt((Err_SM * Err_SM) + (Sistematica_20_SM * Sistematica_20_SM));
-      double Totale_20_EFT = sqrt((Err_EFT * Err_EFT) + (Sistematica_20_EFT * Sistematica_20_EFT)); 
+      double Totale_20_EFT = sqrt((Err_EFT * Err_EFT) + (Sistematica_20_EFT * Sistematica_20_EFT));
 
 
 
@@ -464,11 +464,11 @@ int main (int argc, char ** argv){
       //Grafico errore poisson selezioni
       a[j-1] = abs(integrale_SM_selezioni - integrale_EFT_selezioni) / grande_poisson_selezioni;
       cout << a[j-1] << endl;
-      b[j-1] = j * lum; 
+      b[j-1] = j * lum;
 
       //Grafico errore poisson senza selezione
       c[j-1] = abs(integrale_SM - integrale_EFT) / grande_poisson;
-      d[j-1] = j * lum; 
+      d[j-1] = j * lum;
 
 
 
@@ -486,24 +486,24 @@ int main (int argc, char ** argv){
       if(Totale_20_SM > Totale_20_EFT) grande_totale_20 = Totale_20_SM;
       if(Totale_20_SM < Totale_20_EFT) grande_totale_20 = Totale_20_EFT;
 
-      //Grafico errore con sistematica 5 
+      //Grafico errore con sistematica 5
       e[j-1] = abs(integrale_SM - integrale_EFT) / grande_totale_5;
-      f[j-1] = j * lum; 
+      f[j-1] = j * lum;
 
 
-      //Grafico errore con sistematica 7.5 
+      //Grafico errore con sistematica 7.5
       g[j-1] = abs(integrale_SM - integrale_EFT) / grande_totale_75;
       h[j-1] = j * lum;
- 
+
 
       //Grafico errore con sistematica 10
       l[j-1] = abs(integrale_SM - integrale_EFT) / grande_totale_10;
-      m[j-1] = j * lum; 
+      m[j-1] = j * lum;
 
 
       //Grafico errore con sistematica 20
       n[j-1] = abs(integrale_SM - integrale_EFT) / grande_totale_20;
-      o[j-1] = j * lum; 
+      o[j-1] = j * lum;
 
 
 
@@ -525,20 +525,20 @@ int main (int argc, char ** argv){
 
       //Grafico errore con sistematica 5 e selezioni
       p[j-1] = abs(integrale_SM_selezioni - integrale_EFT_selezioni) / grande_totale_5_selezioni;
-      q[j-1] = j * lum; 
+      q[j-1] = j * lum;
 
 
       //Grafico errore con sistematica 7.5 e selezioni
       r[j-1] = abs(integrale_SM_selezioni - integrale_EFT_selezioni) / grande_totale_75_selezioni;
-      s[j-1] = j * lum; 
+      s[j-1] = j * lum;
 
       //Grafico errore con sistematica 10 e selezioni
       t[j-1] = abs(integrale_SM_selezioni - integrale_EFT_selezioni) / grande_totale_10_selezioni;
-      u[j-1] = j * lum; 
+      u[j-1] = j * lum;
 
       //Grafico errore con sistematica 20 e selezioni
       v[j-1] = abs(integrale_SM_selezioni - integrale_EFT_selezioni) / grande_totale_20_selezioni;
-      z[j-1] = j * lum; 
+      z[j-1] = j * lum;
     }
 
 
@@ -562,7 +562,7 @@ int main (int argc, char ** argv){
     gr_poisson.Draw("P");
 
     TLegend leg1 (0.15,0.7,0.40,0.85);
-    leg1.AddEntry(&gr_poisson, "Total", "p"); 
+    leg1.AddEntry(&gr_poisson, "Total", "p");
     leg1.AddEntry(&gr_poisson_selezioni, "Selections", "p");
     leg1.SetMargin(0.2);
     leg1.Draw();
@@ -611,7 +611,7 @@ int main (int argc, char ** argv){
     gr_10_selezioni.Draw("P");
 
     TLegend leg2 (0.15,0.65,0.40,0.88);
-    leg2.AddEntry(&gr_5, "Total: 5%", "p"); 
+    leg2.AddEntry(&gr_5, "Total: 5%", "p");
     leg2.AddEntry(&gr_5_selezioni, "Selections: 5%", "p");
     leg2.AddEntry(&gr_75, "Total: 7,5%", "p");
     leg2.AddEntry(&gr_75_selezioni, "Selections: 7,5%", "p");
