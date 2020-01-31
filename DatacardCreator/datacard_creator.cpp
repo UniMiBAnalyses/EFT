@@ -22,6 +22,7 @@ to run: ./datacard_creator file.cfg
 #include <TNtuple.h>
 #include <TTreeReader.h>
 #include <TH1.h>
+#include <TH1F.h>
 #include <TApplication.h>
 #include <TCanvas.h>
 #include <TStyle.h>
@@ -63,6 +64,7 @@ int main (int argc, char ** argv)
       //tells the program to plot all the variables passed
       string plot = gConfigParser->readStringOpt ("general::plot");
 
+      //tells the program which variables to use
       vector<string> variables = gConfigParser->readStringListOpt ("general::variables") ;
       //let's retrive info about histograms we wanto to create
       float histos_info[variables.size()][3];
@@ -72,14 +74,29 @@ int main (int argc, char ** argv)
           histos_info[i][2]=gConfigParser->readFloatOpt (variables[i]+"::max") ;
       }
 
-      string OPERATOR = gConfigParser->readStringOpt ("general::operator") ;
-      string event_name = gConfigParser->readStringOpt ("general::event_name") ;
-
       //wilson_coeff should be a float like 0.3, it will be processed after
       string wc = gConfigParser->readStringOpt ("general::wilson_coeff") ;
       string wc_string(wc);
   	  replace(wc_string, ".", "p");
   	  float wilson_coeff=stof(wc);
+
+      cout << "Wilson coeff: "<<wc_string<<"\t"<<to_string(wilson_coeff)<<endl;
+      string g_syntax = gConfigParser->readStringOpt ("general::g_syntax");
+      string input_files[3];
+      if(g_syntax=="true"){
+          //syntax with OPERATOR_event_name_wilson_coeff.root and the three distrib in file
+          string OPERATOR = gConfigParser->readStringOpt ("general::operator") ;
+          string event_name = gConfigParser->readStringOpt ("general::event_name") ;
+          for(int i=0;i<3;i++) input_files[i]=OPERATOR+"_"+event_name+"_"+wc_string;
+          cout << "ci sono arrivato2"<<endl;
+      }
+
+      else{
+          //using input_files instead
+          for(int i=0;i<3;i++) input_files[i]=gConfigParser->readStringListOpt ("general::input_files")[i];
+      }
+
+      cout << "ci sono arrivato2"<<endl;
 
       float luminosity = stof(gConfigParser->readStringOpt ("general::luminosity"));
       //otherwise if you don't want to use my syntax(which I highly reccomend not to do)
@@ -90,9 +107,12 @@ int main (int argc, char ** argv)
       vector<string> name_ntuples = gConfigParser->readStringListOpt ("general::name_ntuples") ;
       vector<string> name_global_numbers;
       for(int i=0;i<name_ntuples.size();i++) name_global_numbers.push_back(name_ntuples[i]+"_nums");
+
+      //reading cuts
       map <string, float> cuts;
       string kinetic_variables[] = {"met","mjj","mll","ptl1","ptl2","ptj1","ptj2","etaj1","etaj2",
           "phij1","phij2","deltaetajj","deltaphijj", "no shape histo"};
+
 
       for(int i=0;i<12;i++){
           if(i!=9 && i!=10){
@@ -101,10 +121,12 @@ int main (int argc, char ** argv)
           }
       }
 
+      //this is for output names only
       string histo_names[3];
       for(int i;i<3;i++) histo_names[i]="histo_"+name_ntuples[i];
 
       /*
+
       //A nice spatafiatta on variable binning and RMS, apparently useless
       float min[] = {30, 500, 20, 25, 20, 30, 30, -5., -5., -M_PI, -M_PI, 2.5, 0, 0};
   	  float max[] = {1620, 8600, 1950, 1250, 600, 2000, 1100, 5., 5., M_PI, M_PI, 10., M_PI, 2};
@@ -206,17 +228,27 @@ int main (int argc, char ** argv)
         }
 
 
-  	}*/
-
+  	}
+*/
 
     vector <TH1F> histos[variables.size()];
     float integrals[variables.size()][3];
+
+    //generally there might be three different files
+    TFile * myfile[3];
     //again if you prefer using the infile the line below is just path=infile
-    string path = "/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/"+OPERATOR+"_"+event_name+"_"+wc_string+".root";
-    TFile * myfile = new TFile(path.c_str());
+    if(g_syntax=="true"){
+        string path = "/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/"+input_files[0]+".root";
+        for(int i=0;i<3;i++) myfile[i]=new TFile(path.c_str());
+    }
+    else{
+        for(int i=0;i<3;i++) myfile[i]=new TFile(input_files[i].c_str());
+    }
+
+
 
     for(int ntuple_number=0; ntuple_number < 3; ntuple_number++){
-            TH1F* global_numbers = (TH1F*) myfile->Get(name_global_numbers[ntuple_number].c_str()) ;
+            TH1F* global_numbers = (TH1F*) myfile[ntuple_number]->Get(name_global_numbers[ntuple_number].c_str()) ;
       		float cross_section = global_numbers->GetBinContent(1);
       		float sum_weights_total = global_numbers->GetBinContent(2);
       		float sum_weights_selected = global_numbers->GetBinContent(3);
@@ -229,7 +261,7 @@ int main (int argc, char ** argv)
       			//float* bins_edges = bins_edges_vectors[var_number].data();
       			//TH1F* histo = new TH1F(variables[var_number].c_str(), histo_names[ntuple_number].c_str(), Nbins[var_number], bins_edges);
                 TH1F* histo = new TH1F(variables[var_number].c_str(), histo_names[ntuple_number].c_str(), histos_info[var_number][0],histos_info[var_number][1],histos_info[var_number][2]);
-                TTreeReader reader (name_ntuples[ntuple_number].c_str(), myfile);
+                TTreeReader reader (name_ntuples[ntuple_number].c_str(), myfile[ntuple_number]);
                 //if(variables[var_number]!="deltaetajj" && variables[var_number]!="deltaphijj"){
                     //this can't be read if the variables are delta...
         			TTreeReaderValue<float> var (reader, variables[var_number].c_str());
@@ -253,6 +285,7 @@ int main (int argc, char ** argv)
                     //here are the cuts
                     //one should provide lower bound for met, mjj, mll, ptl1, ptl2, ptj1, ptj2,deltaetajj
                     //symmetric bounds for etaj1 and etaj2
+
                     if (*met > cuts["met"] && *mjj > cuts["mjj"] && *mll > cuts["mll"] && *ptl1 > cuts["ptl1"] && *ptl2 > cuts["ptl2"] && *ptj1 > cuts["ptj1"] && *ptj2 > cuts["ptj2"] && abs(*etaj1) < cuts["etaj1"] &&
                       abs(*etaj2) < cuts["etaj2"] && abs(*etaj1 - *etaj2) > cuts["deltaetajj"])
     				{
@@ -268,6 +301,10 @@ int main (int argc, char ** argv)
                         //don't know what is this for
     					//else histo->Fill(1, *weight); //no shape distribution
     				}
+
+                    //histo->Fill(*var,*weight);
+
+
     			}
 
     			histo->Scale(normalization);
@@ -306,10 +343,11 @@ int main (int argc, char ** argv)
       TFile * f;
       vector<TFile*> files;
       string filename;
-      for(int i;i<variables.size();i++){
+      for(int i=0;i<variables.size();i++){
           //doing stuff for this kinetic variable
           //creating all the root files
-          filename = OPERATOR+"_"+event_name+"_"+wc_string+"_"+variables[i]+".root";
+          filename = "data_"+wc_string+"_"+variables[i]+".root";
+          cout << "Creating this file:\t"<<filename<<endl;
           f = new TFile (filename.c_str(),"recreate");
           files.push_back(f);
       }
@@ -329,10 +367,10 @@ int main (int argc, char ** argv)
   		for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) cout << integrals[var_number][ntuple_number] << "\t";
   		cout << endl;
 
-        filename="datacard_"+OPERATOR+"_"+event_name+"_"+wc_string+"_"+variables[var_number]+".txt";
+        filename="datacard_"+wc_string+"_"+variables[var_number]+".txt";
         ofstream output_datacard(filename.c_str());
         output_datacard << separator <<endl;
-        filename = OPERATOR+"_"+event_name+"_"+wc_string+"_"+variables[var_number]+".root";
+        filename = "data_"+wc_string+"_"+variables[var_number]+".root";
         //* all data, * all phase space
         output_datacard <<"shapes *\t* "+filename+" histo_$PROCESS $PROCESS_$SYSTEMATIC"<<endl;
         output_datacard <<"shapes data_obs * "+filename+" sm"<<endl;
@@ -374,6 +412,21 @@ int main (int argc, char ** argv)
     if(plot=="true"){
         TApplication* myapp = new TApplication ("myapp", NULL, NULL);
 
+        /*auto * c = new TCanvas();
+        c->cd();
+        histos[1][2].Scale(wilson_coeff*wilson_coeff); // quadratic scaling relation
+        histos[1][1].Scale(wilson_coeff);	 // linear scaling relation
+        histos[1][0].SetFillStyle(3001);
+        histos[1][0].SetFillColor(kOrange+1);
+        histos[1][2].SetFillStyle(3001);
+        histos[1][2].SetFillColor(kBlue-7);
+        histos[1][1].SetFillColor(kGreen+1);
+        histos[1][1].SetFillStyle(3001);
+        histos[1][0].Draw("hist same");
+        histos[1][2].Draw("hist same");
+        histos[1][1].Draw("hist same");
+        gPad->BuildLegend(0.60,0.70,0.90,0.90,"");*/
+
       	vector <TCanvas*> cnv;
         TCanvas * p;
         for(int var_number=0;var_number<variables.size();var_number++){
@@ -386,21 +439,25 @@ int main (int argc, char ** argv)
           		"#eta_{j1}","#eta_{j2}","#phi_{j1}","#phi_{j2}","#Delta#eta_{jj}","#Delta#phi_{jj}"};
           	THStack* h_stack = new THStack("hs","");
 
+
+
+
           	histos[var_number][2].Scale(wilson_coeff*wilson_coeff); // quadratic scaling relation
           	histos[var_number][1].Scale(wilson_coeff);	 // linear scaling relation
 
+
+
           	//PLOT
 
-          	//plots only the sm distribution, to check the binning
-
+            //not needed probably:
 
           	//change of variable in the y axis, from "number of events" to "(number of events)/(bin width)"
-          	for (int j = 0; j < 3; j++) {
+          	/*for (int j = 0; j < 3; j++) {
           		for (int i = 0; i < histos[var_number][j].GetNbinsX()+1; i++)
           		{
           			histos[var_number][j].SetBinContent(i, histos[var_number][j].GetBinContent(i)/histos[var_number][j].GetBinWidth(i));
           		}
-          	}
+          	}*/
 
           	histos[var_number][0].SetFillStyle(3001);
           	histos[var_number][0].SetFillColor(kOrange+1);
@@ -419,36 +476,110 @@ int main (int argc, char ** argv)
           	histo_sum->SetFillColor(kWhite);
           	histo_sum->SetLineWidth(2.);
 
-          	p->cd(1);
+            p->cd(1);
 
-          	h_stack->Draw("HIST");
-          	histo_sum->Draw("same hist");
-          	stringstream ss_title;
-          	ss_title << wilson_coeff;
-          	string title = kinetic_variables_tex[var_number] + string(" (c_{W} = ") + ss_title.str() + string(")");
-          	h_stack->SetTitle(title.c_str());
-          	string xlabel = string(kinetic_variables_tex[var_number]);
-          	string ylabel = "events / ";/*
-          	if (var_number < 7)
-          	{
-          		xlabel += string(" (Gev)");
-          		ylabel += string("Gev");
-          	}*/
-            /*
-          	else if (var_number_plot == 7 || var_number_plot == 8 || var_number_plot == 11) ylabel += string("#eta unit");
-          	else if (var_number_plot == 9 || var_number_plot == 10 || var_number_plot == 12) ylabel += string("#phi unit");*/
-          	h_stack->GetXaxis()->SetTitle(xlabel.c_str());
-          	h_stack->GetXaxis()->SetTitleSize(.05);
-          	h_stack->GetXaxis()->SetTitleOffset(.9);
-          	h_stack->GetYaxis()->SetTitle(ylabel.c_str());
-          	h_stack->GetYaxis()->SetTitleSize(.05);
-          	h_stack->GetYaxis()->SetTitleOffset(.9);
-          	/*if (var_number_plot < 7 || var_number_plot == 11) gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
-          	else if (var_number_plot != 12) gPad->BuildLegend(0.55,0.14,0.85,0.34,"");
-          	else gPad->BuildLegend(0.15,0.44,0.45,0.64,"");*/
+            // Upper plot will be in pad1
+           TPad *pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
+           pad1->SetBottomMargin(0); // Upper and lower plot are joined
+           pad1->SetGridx();         // Vertical grid
+           pad1->Draw();             // Draw the upper pad: pad1
+           pad1->cd();               // pad1 becomes the current pad
 
-          	p->Modified();
-          	p->Update();
+
+         	h_stack->Draw("HIST");
+         	histo_sum->Draw("same hist");
+         	stringstream ss_title;
+         	ss_title << wilson_coeff;
+         	string title = kinetic_variables_tex[var_number] + string(" (OPERATOR = ") + ss_title.str() + string(")");
+         	h_stack->SetTitle(title.c_str());
+         	string xlabel = string(kinetic_variables_tex[var_number]);
+         	string ylabel = "events";/*
+         	if (var_number < 7)
+         	{
+         		xlabel += string(" (Gev)");
+         		ylabel += string("Gev");
+         	}*/
+           /*
+         	else if (var_number_plot == 7 || var_number_plot == 8 || var_number_plot == 11) ylabel += string("#eta unit");
+         	else if (var_number_plot == 9 || var_number_plot == 10 || var_number_plot == 12) ylabel += string("#phi unit");*/
+         	h_stack->GetXaxis()->SetTitle(xlabel.c_str());
+         	h_stack->GetXaxis()->SetTitleSize(.05);
+         	h_stack->GetXaxis()->SetTitleOffset(.9);
+         	h_stack->GetYaxis()->SetTitle(ylabel.c_str());
+         	h_stack->GetYaxis()->SetTitleSize(.05);
+         	h_stack->GetYaxis()->SetTitleOffset(.9);
+           gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
+         	/*if (var_number_plot < 7 || var_number_plot == 11) gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
+         	else if (var_number_plot != 12) gPad->BuildLegend(0.55,0.14,0.85,0.34,"");
+         	else gPad->BuildLegend(0.15,0.44,0.45,0.64,"");*/
+
+
+
+
+           // Do not draw the Y axis label on the upper plot and redraw a small
+           // axis instead, in order to avoid the first label (0) to be clipped.
+           /*h1->GetYaxis()->SetLabelSize(0.);
+           TGaxis *axis = new TGaxis( -5, 20, -5, 220, 20,220,510,"");
+           axis->SetLabelFont(43); // Absolute font size in pixel (precision 3)
+           axis->SetLabelSize(15);
+           axis->Draw();
+
+           // lower plot will be in pad
+
+           c->cd();          // Go back to the main canvas before defining pad2*/
+           p->cd(1);
+           TPad *pad2 = new TPad("pad2", "pad2", 0, 0.05, 1, 0.3);
+           pad2->SetTopMargin(0);
+           pad2->SetBottomMargin(0.2);
+           pad2->SetGridx(); // vertical grid
+           pad2->Draw();
+           pad2->cd();       // pad2 becomes the current pad
+
+           // Define the ratio plot
+           TH1F *h3 = (TH1F*)histos[var_number][0].Clone("h3");
+           h3->SetLineColor(kBlack);
+           /*h3->SetMinimum(0);  // Define Y ..
+           h3->SetMaximum(2); // .. range
+           */
+           h3->Sumw2();
+           h3->SetStats(0);      // No statistics on lower plot
+           h3->Divide(histo_sum);
+           h3->SetMarkerStyle(21);
+           h3->Draw("ep");       // Draw the ratio plot
+
+           /*// h1 settings
+           h1->SetLineColor(kBlue+1);
+           h1->SetLineWidth(2);
+
+           // Y axis h1 plot settings
+           h1->GetYaxis()->SetTitleSize(20);
+           h1->GetYaxis()->SetTitleFont(43);
+           h1->GetYaxis()->SetTitleOffset(1.55);
+
+           // h2 settings
+           h2->SetLineColor(kRed);
+           h2->SetLineWidth(2);
+
+           // Ratio plot (h3) settings*/
+           h3->SetTitle(""); // Remove the ratio title
+
+           // Y axis ratio plot settings
+           h3->GetYaxis()->SetTitle("ratio SM/QUAD ");
+           h3->GetYaxis()->SetNdivisions(505);
+           h3->GetYaxis()->SetTitleSize(20);
+           h3->GetYaxis()->SetTitleFont(43);
+           h3->GetYaxis()->SetTitleOffset(1.55);
+           h3->GetYaxis()->SetLabelFont(43); // Absolute font size in pixel (precision 3)
+           h3->GetYaxis()->SetLabelSize(15);
+
+           // X axis ratio plot settings
+           h3->GetXaxis()->SetTitleSize(20);
+           h3->GetXaxis()->SetTitleFont(43);
+           h3->GetXaxis()->SetTitleOffset(4.);
+           h3->GetXaxis()->SetLabelFont(43); // Absolute font size in pixel (precision 3)
+           h3->GetXaxis()->SetLabelSize(15);
+
+
 
           	p->cd(2);
 
@@ -457,16 +588,22 @@ int main (int argc, char ** argv)
           	h_stack->Draw("HIST");
           	histo_sum->Draw("same hist");
           	string title_log = title + " (log scale)";
-          	h_stack->SetTitle(title_log.c_str());/*
-          	if (var_number_plot < 7 || var_number_plot == 11) gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
-          	else if (var_number_plot != 12) gPad->BuildLegend(0.55,0.14,0.85,0.34,"");
+          	h_stack->SetTitle(title_log.c_str());
+          	/*if (var_number_plot < 7 || var_number_plot == 11)*/ gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
+          	/*else if (var_number_plot != 12) gPad->BuildLegend(0.55,0.14,0.85,0.34,"");
           	else gPad->BuildLegend(0.15,0.44,0.45,0.64,"");*/
 
           	p->Modified();
           	p->Update();
 
           	//To save the plots
-          	string plot_name = variables[var_number] + string("_sel_"+OPERATOR+".png");
+            string plot_name;
+            if(g_syntax=="true"){
+                plot_name = variables[var_number]+"_"+input_files[0]+".png";
+            }
+          	else{
+                plot_name = variables[var_number]+"_sel_"+wc_string+".png";
+            }
           	p->Print(plot_name.c_str(), "png");
 
         }
