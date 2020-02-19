@@ -559,6 +559,8 @@ int main (int argc, char ** argv)
             histo_sum->SetLineStyle(10);
           	histo_sum->SetLineWidth(2.);
 
+
+
             //p->cd(1);
             p1->cd();
             // Upper plot will be in pad1
@@ -585,6 +587,7 @@ int main (int argc, char ** argv)
             h_stack->Draw("hist");
          	histo_sum->Draw("hist same");
 
+
             TString nameLabel = Form ("L = %.1f fb^{-1}   (13 TeV)", luminosity);
             auto tex3 = new TLatex(0.62,0.905,nameLabel.Data());
             tex3->SetNDC();
@@ -603,6 +606,7 @@ int main (int argc, char ** argv)
          	h_stack->GetYaxis()->SetTitle(ylabel.c_str());
          	h_stack->GetYaxis()->SetTitleSize(.05);
          	h_stack->GetYaxis()->SetTitleOffset(.9);
+
             TLegend * legend;
             if (variables[var_number] !="deltaphijj") legend = new TLegend(0.60,0.70,0.90,0.90);
             else legend= new TLegend(0.1,0.7,0.48,0.9,"");
@@ -610,6 +614,27 @@ int main (int argc, char ** argv)
             legend->AddEntry(&histos[var_number][1],"INT","f");
             legend->AddEntry(&histos[var_number][2],"BSM","f");
             legend->AddEntry(histo_sum,"EFT = SM + INT + BSM","l");
+
+            //creating the EFT distribution for different values of Wilson coeff
+            /*float min_c,max_c,c;
+            int number;
+            number=4;
+            TH1F * histo_sum_c[4];
+            min_c=0.2;
+            max_c=2;
+            float delta = (max_c-min_c)/(float)number;
+            for(int i=0;i<number;i++){
+                c=min_c+i*delta;
+                histo_sum_c[i]= new TH1F(histos[var_number][0] + (c/wc)*histos[var_number][1] + (c/wc)*(c/wc)*histos[var_number][2]);
+                legend->AddEntry(histo_sum_c[i],("EFT = SM + BSM + INT c= "+to_string(c)).c_str(),"l");
+              	histo_sum_c[i]->SetLineColor(kWhite+1+i);
+              	histo_sum_c[i]->SetFillColor(kWhite);
+                histo_sum_c[i]->SetLineStyle(10);
+              	histo_sum_c[i]->SetLineWidth(2.);
+                histo_sum_c[i]->Draw("hist same");
+            }
+            */
+
             legend->Draw("same");
             /*if (variables[var_number] !="deltaphijj") gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
             else gPad->BuildLegend(0.1,0.7,0.48,0.9,"");*/
