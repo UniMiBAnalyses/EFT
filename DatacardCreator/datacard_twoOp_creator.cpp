@@ -1,7 +1,16 @@
-// c++ -o datacard_creator `root-config --glibs --cflags` CfgParser.cc  -lm datacard_creator.cpp
+// c++ -o datacard_twoOp_creator `root-config --glibs --cflags` CfgParser.cc  -lm datacard_twoOp_creator.cpp
 /*
 one should pass the program a config file like file.cfg
 to run: ./datacard_creator file.cfg
+
+the difference between this program and datacard_creator is only the list of distributions handled
+we don't anymore sm, lin and quad, but we have sm, lin1,quad1,lin2,quad2 and interf
+the datacard will then contain sm, linear_1, quad_1,linear_2, quad_2 and linear_mixed_12
+this also requires that wilson_coeff is the same for both operators(meaning they have the same value in the generation process)
+
+procedure used to generate interference term is importa model in which two wilson coeff are non zero, generate process NP=2 NP^2==1
+Meanwhile the oders distribution were taken from normal generations.
+
 */
 
 
@@ -30,7 +39,6 @@ to run: ./datacard_creator file.cfg
 #include <THStack.h>
 #include <TText.h>
 #include <TLine.h>
-#include <TLatex.h>
 
 
 #include <TLorentzVector.h>
@@ -78,29 +86,18 @@ int main (int argc, char ** argv)
 
       //wilson_coeff should be a float like 0.3, it will be processed after
       string wc = gConfigParser->readStringOpt ("general::wilson_coeff") ;
-      float wilson_coeff_plot = gConfigParser->readFloatOpt ("general::wilson_coeff_plot") ;
       string wc_string(wc);
   	  replace(wc_string, ".", "p");
   	  float wilson_coeff=stof(wc);
 
       cout << "Wilson coeff: "<<wc_string<<"\t"<<to_string(wilson_coeff)<<endl;
       string g_syntax = gConfigParser->readStringOpt ("general::g_syntax");
-      string input_files[3];
-      string OPERATOR = gConfigParser->readStringOpt ("general::operator") ;
-      if(g_syntax=="true"){
-          //syntax with OPERATOR_event_name_wilson_coeff.root and the three distrib in file
+      string input_files[6];
 
-          string event_name = gConfigParser->readStringOpt ("general::event_name") ;
-          for(int i=0;i<3;i++) input_files[i]=OPERATOR+"_"+event_name+"_"+wc_string;
-          cout << "ci sono arrivato2"<<endl;
-      }
+      //using input_files instead
+      for(int i=0;i<6;i++) input_files[i]=gConfigParser->readStringListOpt ("general::input_files")[i];
 
-      else{
-          //using input_files instead
-          for(int i=0;i<3;i++) input_files[i]=gConfigParser->readStringListOpt ("general::input_files")[i];
-      }
 
-      cout << "ci sono arrivato2"<<endl;
 
       float luminosity = stof(gConfigParser->readStringOpt ("general::luminosity"));
       //otherwise if you don't want to use my syntax(which I highly reccomend not to do)
@@ -126,8 +123,8 @@ int main (int argc, char ** argv)
       }
 
       //this is for output names only
-      string histo_names[] = {"histo_sm", "histo_linear", "histo_quadratic"};
-      string dist_names[]={"sm","linear","quadratic"};
+      string histo_names[] = {"histo_sm", "histo_linear_1", "histo_quad_1", "histo_linear_2", "histo_quad_2", "histo_linear_mixed_12"};
+      string dist_names[]={"sm", "linear_1", "quad_1", "linear_2", "quad_2", "linear_mixed_12"};
 
       /*
 
@@ -237,33 +234,28 @@ int main (int argc, char ** argv)
 
 
 
-    vector <TH1F> histos[variables.size()];
-    float integrals[variables.size()][3];
+    vector <TH1F> histos[variables.size()]; //array of vectors
+    float integrals[variables.size()][6];
 
     //generally there might be three different files
-    TFile * myfile[3];
+    TFile * myfile[6];
     //again if you prefer using the infile the line below is just path=infile
-    if(g_syntax=="true"){
-        string path = "/Users/giorgio/Desktop/tesi/D6EFTStudies/analysis/"+input_files[0]+".root";
-        for(int i=0;i<3;i++) myfile[i]=new TFile(path.c_str());
-    }
-    else{
-        for(int i=0;i<3;i++) myfile[i]=new TFile(input_files[i].c_str());
-    }
+
+    for(int i=0;i<6;i++) myfile[i]=new TFile(input_files[i].c_str());
 
 
-
-    for(int ntuple_number=0; ntuple_number < 3; ntuple_number++){
+    for(int ntuple_number=0; ntuple_number < 6; ntuple_number++){
             TH1F* global_numbers = (TH1F*) myfile[ntuple_number]->Get(name_global_numbers[ntuple_number].c_str()) ;
       		float cross_section = global_numbers->GetBinContent(1);
       		float sum_weights_total = global_numbers->GetBinContent(2);
       		float sum_weights_selected = global_numbers->GetBinContent(3);
               cout <<"xs:"<< cross_section << "\nsum_weights_tot:"<<sum_weights_total<<"\nsum_weights_selected"<<sum_weights_selected<<endl;
 
-      		float normalization = cross_section*luminosity/(sum_weights_total);
-            //float normalization = 0.1;
+      		float normalization = cross_section*luminosity/sum_weights_total;
+
       		for (int var_number = 0; var_number < variables.size(); var_number++)
       		{
+                cout << "ntuple num:\t"<<ntuple_number<<"\nvar_number:\t"<<var_number<<endl;
                 //instead of using the RMS one can use min, max and nbins in order to have a bin width
                 //the plot will be divided into 3 zones, the first with a bin width of 2/3bw, the second
                 //with bw, and third with  4/3 width in order to prevent empty bins at the tails.
@@ -362,37 +354,31 @@ int main (int argc, char ** argv)
     			if (ntuple_number == 1) histo->Scale(1./wilson_coeff);  //linear term
     			if (ntuple_number == 2) histo->Scale(1./(wilson_coeff*wilson_coeff));  //quadratic term
 
+                if (ntuple_number == 3) histo->Scale(1./wilson_coeff);  //linear term
+    			if (ntuple_number == 4) histo->Scale(1./(wilson_coeff*wilson_coeff));  //quadratic term
+
     			//overflow bin events moved in the last bin
                 //last bin content=last bin content + content of overflow bin
-                if (variables[var_number]!="noshape"){
-                    histo->SetBinContent(histo->GetNbinsX(), histo->GetBinContent(histo->GetNbinsX()) + histo->GetBinContent(histo->GetNbinsX() + 1));
-                    histo->SetBinContent(histo->GetNbinsX() + 1, 0.);
-                }
-
+    			histo->SetBinContent(histo->GetNbinsX(), histo->GetBinContent(histo->GetNbinsX()) + histo->GetBinContent(histo->GetNbinsX() + 1));
+    			histo->SetBinContent(histo->GetNbinsX() + 1, 0.);
 
     			histo->SetName(histo_names[ntuple_number].c_str());
 
     			//To check if there are no empty bins in the sm distribution
-                cout << "Distribution:\t"<<ntuple_number<<"\nVariable:\t"<<variables[var_number]<<endl;
-    			if (ntuple_number !=-1)
+    			/*if (ntuple_number !=-1)
     			{
     				for (int bin_counter = 0; bin_counter < histo->GetNbinsX() + 2 ; bin_counter++) {
-    					if (histo->GetBinContent(bin_counter) != 0){
-                            cout << histo->GetBinContent(bin_counter) << endl;
-                            if(histo->GetBinContent(bin_counter)<1) cout << "minore di 1:\t"<<endl;
-                        }
-
-    					else{
-                            cout << "XXXXXXX" << endl;
-                        }
-
+    					if (histo->GetBinContent(bin_counter) != 0)
+    						cout << histo->GetBinContent(bin_counter) << endl;
+    					else
+    						cout << "XXXXXXX" << endl;
     				}
     				cout << endl;
-    			}
-
+    			}*/
+                cout << "arrivato "<<var_number+ntuple_number<<endl;
     			histos[var_number].push_back(*histo);
     			integrals[var_number][ntuple_number] = histo->Integral();
-
+                cout << "arrivato "<<var_number+ntuple_number<<endl;
     			histo->Reset();
             }
             delete global_numbers;
@@ -405,7 +391,7 @@ int main (int argc, char ** argv)
       for(int i=0;i<variables.size();i++){
           //doing stuff for this kinetic variable
           //creating all the root files
-          filename = "data_"+wc_string+"_"+variables[i]+"_"+OPERATOR+".root";
+          filename = "data_"+wc_string+"_"+variables[i]+".root";
           cout << "Creating this file:\t"<<filename<<endl;
           f = new TFile (filename.c_str(),"recreate");
           files.push_back(f);
@@ -419,18 +405,20 @@ int main (int argc, char ** argv)
   		histos[var_number][0].Write();
   		histos[var_number][1].Write();
   		histos[var_number][2].Write();
+        histos[var_number][3].Write();
+  		histos[var_number][4].Write();
+  		histos[var_number][5].Write();
   		files[var_number]->Write();
   		files[var_number]->Close();
 
   		cout << variables[var_number].c_str() << "---------------------------------" << endl;
-  		for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) cout << integrals[var_number][ntuple_number] << "\t";
+  		for (int ntuple_number = 0; ntuple_number < 6; ntuple_number++) cout << integrals[var_number][ntuple_number] << "\t";
   		cout << endl;
-        cout <<"integr_interf/(2*integr_quad)=\t"<< integrals[var_number][1]/(2*integrals[var_number][2])<<endl;
 
-        filename="datacard_"+wc_string+"_"+variables[var_number]+"_"+OPERATOR+".txt";
+        filename="datacard_"+wc_string+"_"+variables[var_number]+".txt";
         ofstream output_datacard(filename.c_str());
         output_datacard << separator <<endl;
-        filename = "data_"+wc_string+"_"+variables[var_number]+"_"+OPERATOR+".root";
+        filename = "data_"+wc_string+"_"+variables[var_number]+".root";
         //* all data, * all phase space
         output_datacard << separator <<endl;
         output_datacard << "imax *" <<endl;
@@ -444,26 +432,26 @@ int main (int argc, char ** argv)
         output_datacard <<"observation\t"<<integrals[var_number][0]<<endl;
         output_datacard <<separator<<endl;
         output_datacard << "bin\t";
-        for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) output_datacard <<"test"<<"\t";
+        for (int ntuple_number = 0; ntuple_number < 6; ntuple_number++) output_datacard <<"test"<<"\t";
         output_datacard <<endl;
         output_datacard << "process\t";
-        for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) output_datacard << dist_names[ntuple_number] << "\t";
+        for (int ntuple_number = 0; ntuple_number < 6; ntuple_number++) output_datacard << dist_names[ntuple_number] << "\t";
         output_datacard <<endl;
         output_datacard << "process\t";
-        for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) output_datacard << ntuple_number<< "\t";
+        for (int ntuple_number = 0; ntuple_number < 6; ntuple_number++) output_datacard << ntuple_number<< "\t";
         output_datacard <<endl;
         output_datacard << "rate\t";
-        for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) output_datacard << integrals[var_number][ntuple_number] << "\t";
+        for (int ntuple_number = 0; ntuple_number < 6; ntuple_number++) output_datacard << integrals[var_number][ntuple_number] << "\t";
         output_datacard <<endl;
         output_datacard << separator <<endl;
         output_datacard <<"lumi"<<"\t"<<"lnN"<<"\t";
         //2% of uncertanty on signal and background
-        for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++) output_datacard << "1.02" << "\t";
+        for (int ntuple_number = 0; ntuple_number < 6; ntuple_number++) output_datacard << "1.02" << "\t";
         output_datacard <<endl;
         //some other nuissance
         output_datacard <<"bla"<<"\t"<<"lnN"<<"\t";
 
-        for (int ntuple_number = 0; ntuple_number < 3; ntuple_number++){
+        for (int ntuple_number = 0; ntuple_number < 6; ntuple_number++){
             if(ntuple_number!=2){
                 output_datacard << "-" << "\t";
             }
@@ -511,15 +499,14 @@ int main (int argc, char ** argv)
           		"#eta_{j1}","#eta_{j2}","#phi_{j1}","#phi_{j2}","#Delta#eta_{jj}","#Delta#phi_{jj}"};
           	THStack* h_stack = new THStack("hs","");
 
-            float wc = wilson_coeff_plot;
-
-            histos[var_number][2].Scale(wc*wc);
-            histos[var_number][1].Scale(wc);
-            cout <<"WC:\t"<< wilson_coeff <<endl;
 
 
-          	//histos[var_number][2].Scale(wilson_coeff*wilson_coeff); // quadratic scaling relation
-          	//histos[var_number][1].Scale(wilson_coeff);	 // linear scaling relation
+
+          	histos[var_number][2].Scale(wilson_coeff*wilson_coeff); // quadratic scaling relation
+          	histos[var_number][1].Scale(wilson_coeff);	 // linear scaling relation
+
+            histos[var_number][4].Scale(wilson_coeff*wilson_coeff); // quadratic scaling relation
+          	histos[var_number][3].Scale(wilson_coeff);	 // linear scaling relation
 
 
 
@@ -535,28 +522,31 @@ int main (int argc, char ** argv)
           		}
           	}*/
 
-            //get max of all histos
-            float maxm = abs(histos[var_number][0].GetMaximum())+abs(histos[var_number][1].GetMaximum())+abs(histos[var_number][2].GetMaximum());
-
-            histos[var_number][0].SetTitle("SM");
           	histos[var_number][0].SetFillStyle(3001);
-          	histos[var_number][0].SetFillColor(kAzure);
-            histos[var_number][2].SetTitle("BSM");
-          	histos[var_number][2].SetFillStyle(3001);
-          	histos[var_number][2].SetFillColor(kMagenta);
-            histos[var_number][1].SetTitle("INT");
-          	histos[var_number][1].SetFillColor(kGreen+1);
           	histos[var_number][1].SetFillStyle(3001);
+            histos[var_number][2].SetFillStyle(3001);
+          	histos[var_number][3].SetFillStyle(3001);
+          	histos[var_number][4].SetFillStyle(3001);
+          	histos[var_number][5].SetFillStyle(3001);
+
+            histos[var_number][0].SetFillColor(kBlack);
+            histos[var_number][1].SetFillColor(kRed);
+            histos[var_number][2].SetFillColor(kBlue);
+            histos[var_number][3].SetFillColor(kGreen);
+            histos[var_number][4].SetFillColor(kOrange);
+            histos[var_number][5].SetFillColor(kYellow);
 
           	h_stack->Add(&histos[var_number][0]);
           	h_stack->Add(&histos[var_number][1]);
           	h_stack->Add(&histos[var_number][2]);
+            h_stack->Add(&histos[var_number][3]);
+            h_stack->Add(&histos[var_number][4]);
+            h_stack->Add(&histos[var_number][5]);
 
-          	TH1F* histo_sum = new TH1F(histos[var_number][0] + histos[var_number][1] + histos[var_number][2]);
-          	histo_sum->SetTitle("EFT = SM + BSM + INT");
+          	TH1F* histo_sum = new TH1F(histos[var_number][0] + histos[var_number][1] + histos[var_number][2] + histos[var_number][3]+ histos[var_number][4]+ histos[var_number][5]);
+          	histo_sum->SetTitle("SM + BSM_1 + INT_1 + BSM_2 + INT_2 + INT_12");
           	histo_sum->SetLineColor(kRed);
           	histo_sum->SetFillColor(kWhite);
-            histo_sum->SetLineStyle(10);
           	histo_sum->SetLineWidth(2.);
 
             //p->cd(1);
@@ -564,34 +554,25 @@ int main (int argc, char ** argv)
             // Upper plot will be in pad1
            TPad *pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
            pad1->SetBottomMargin(0); // Upper and lower plot are joined
-           pad1->SetGrid();         // Vertical grid
+           pad1->SetGridx();         // Vertical grid
            pad1->Draw();             // Draw the upper pad: pad1
            pad1->cd();               // pad1 becomes the current pad
 
 
 
          	stringstream ss_title;
-         	ss_title << setprecision(2)<<wc;
-            string a= ss_title.str();
-            replace(a, ".", "p");
-
-         	string title = variables[var_number] + " (c"+OPERATOR+" = " + ss_title.str() + ")";
-            h_stack->SetTitle(title.c_str());
+         	ss_title << wilson_coeff;
+         	string title = variables[var_number] + string(" (OPERATOR = ") + ss_title.str() + string(")");
+         	h_stack->SetTitle(title.c_str());
          	string xlabel = string(variables[var_number]);
             xlabel += string(" (Gev)");
-         	string ylabel = "N events";
+         	string ylabel = "N° events";
 
-            h_stack->SetMaximum(1.05*maxm);
-            h_stack->Draw("hist");
-         	histo_sum->Draw("hist same");
 
-            TString nameLabel = Form ("L = %.1f fb^{-1}   (13 TeV)", luminosity);
-            auto tex3 = new TLatex(0.62,0.905,nameLabel.Data());
-            tex3->SetNDC();
-            tex3->SetTextFont(52);
-            tex3->SetTextSize(0.035);
-            tex3->SetLineWidth(2);
-            tex3->Draw("same");
+            h_stack->Draw("HIST");
+         	histo_sum->Draw("same hist");
+
+
 
          	if (variables[var_number]=="deltaetajj" ) xlabel = string("#eta units");
             else if (variables[var_number]=="deltaphijj") xlabel = string("#phi (rad)");
@@ -603,18 +584,8 @@ int main (int argc, char ** argv)
          	h_stack->GetYaxis()->SetTitle(ylabel.c_str());
          	h_stack->GetYaxis()->SetTitleSize(.05);
          	h_stack->GetYaxis()->SetTitleOffset(.9);
-            TLegend * legend;
-            if (variables[var_number] !="deltaphijj") legend = new TLegend(0.60,0.70,0.90,0.90);
-            else legend= new TLegend(0.1,0.7,0.48,0.9,"");
-            legend->AddEntry(&histos[var_number][0],"SM","f");
-            legend->AddEntry(&histos[var_number][1],"INT","f");
-            legend->AddEntry(&histos[var_number][2],"BSM","f");
-            legend->AddEntry(histo_sum,"EFT = SM + INT + BSM","l");
-            legend->Draw("same");
-            /*if (variables[var_number] !="deltaphijj") gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
-            else gPad->BuildLegend(0.1,0.7,0.48,0.9,"");*/
-
-
+            if (variables[var_number] !="deltaphijj") gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
+            else gPad->BuildLegend(0.1,0.7,0.48,0.9,"");
          	/* if (var_number_plot < 7 || var_number_plot == 11) gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
          	else if (var_number_plot != 12) gPad->BuildLegend(0.55,0.14,0.85,0.34,"");
          	else gPad->BuildLegend(0.15,0.44,0.45,0.64,"");*/
@@ -638,21 +609,20 @@ int main (int argc, char ** argv)
            TPad *pad2 = new TPad("pad2", "pad2", 0, 0.05, 1, 0.3);
            pad2->SetTopMargin(0);
            pad2->SetBottomMargin(0.2);
-           pad2->SetGrid(); // vertical grid
+           pad2->SetGridx(); // vertical grid
            pad2->Draw();
            pad2->cd();       // pad2 becomes the current pad
 
            // Define the ratio plot
            TH1F *h3 = (TH1F*)histos[var_number][0].Clone("h3");
            h3->SetLineColor(kBlack);
-           h3->SetMinimum(0);  // Define Y ..
+           /*h3->SetMinimum(0);  // Define Y ..
            h3->SetMaximum(2); // .. range
-
+           */
            h3->Sumw2();
            h3->SetStats(0);      // No statistics on lower plot
            h3->Divide(histo_sum);
            h3->SetMarkerStyle(21);
-           h3->GetYaxis()->SetTitle("SM/EFT");
            h3->Draw("ep");       // Draw the ratio plot
 
            TLine *line1 = new TLine( h3->GetXaxis()->GetXmin(),1,h3->GetXaxis()->GetXmax(),1);
@@ -681,11 +651,9 @@ int main (int argc, char ** argv)
            h3->GetYaxis()->SetNdivisions(505);
            h3->GetYaxis()->SetTitleSize(20);
            h3->GetYaxis()->SetTitleFont(43);
-           h3->GetYaxis()->SetTitleOffset(0.9);
+           h3->GetYaxis()->SetTitleOffset(1.55);
            h3->GetYaxis()->SetLabelFont(43); // Absolute font size in pixel (precision 3)
            h3->GetYaxis()->SetLabelSize(15);
-
-           //h3->GetYaxis()->SetTitleOffset(1.55);
 
            // X axis ratio plot settings
            h3->GetXaxis()->SetTitle(xlabel.c_str());
@@ -695,6 +663,7 @@ int main (int argc, char ** argv)
            h3->GetXaxis()->SetTitleOffset(3);
            h3->GetXaxis()->SetLabelFont(43); // Absolute font size in pixel (precision 3)
            h3->GetXaxis()->SetLabelSize(15);
+           h3->GetYaxis()->SetRangeUser(0,2);
 
 
            //h3->GetXaxis()->SetTitleOffset(.9);
@@ -703,11 +672,11 @@ int main (int argc, char ** argv)
                plot_name = variables[var_number]+"_"+input_files[0];
            }
            else{
-               plot_name = variables[var_number]+"_"+a;
+               plot_name = variables[var_number]+"_sel_"+wc_string;
            }
            //p->Print(plot_name.c_str(), "png");
-           p1->Print(("dist_"+plot_name+"_"+OPERATOR+".png").c_str(), "png");
-           p1->SaveAs(("dist_"+plot_name+"_"+OPERATOR+".root").c_str(), "root");
+           p1->Print((plot_name+"_dist.png").c_str(), "png");
+
           	//p->cd(2);
             p2->cd();
           	//LOGARITHMIC PLOT
@@ -722,8 +691,7 @@ int main (int argc, char ** argv)
 
 
 
-            p2->Print(("log_"+plot_name+"_"+OPERATOR+".png").c_str(), "png");
-            p2->SaveAs(("log_"+plot_name+"_"+OPERATOR+".root").c_str(), "root");
+            p2->Print((plot_name+"_log.png").c_str(), "png");
 
             //p->cd(3);
             p3->cd();
@@ -731,23 +699,45 @@ int main (int argc, char ** argv)
             Double_t scale = norm/(histos[var_number][0].Integral());
             Double_t scale1 = norm/(histos[var_number][1].Integral());
             Double_t scale2 = norm/(histos[var_number][2].Integral());
+            Double_t scale3 = norm/(histos[var_number][3].Integral());
+            Double_t scale4 = norm/(histos[var_number][4].Integral());
+            Double_t scale5 = norm/(histos[var_number][5].Integral());
+
+            histos[var_number][5].Scale(scale5); // quadratic scaling relation
+            histos[var_number][4].Scale(scale4); // quadratic scaling relation
+            histos[var_number][3].Scale(scale3);	 // linear scaling relation
             histos[var_number][2].Scale(scale2); // quadratic scaling relation
             histos[var_number][1].Scale(scale1);	 // linear scaling relation
             histos[var_number][0].Scale(scale);	 // linear scaling relation
+
             histos[var_number][0].SetFillStyle(3690);
-            histos[var_number][2].SetFillStyle(3690);
             histos[var_number][1].SetFillStyle(3690);
+            histos[var_number][2].SetFillStyle(3690);
+            histos[var_number][3].SetFillStyle(3690);
+            histos[var_number][4].SetFillStyle(3690);
+            histos[var_number][5].SetFillStyle(3690);
+
             histos[var_number][0].SetFillColor(0);
             histos[var_number][2].SetFillColor(0);
             histos[var_number][1].SetFillColor(0);
-            histos[var_number][0].SetLineColor(kMagenta);
-            histos[var_number][1].SetLineColor(kMagenta+10);
-            histos[var_number][2].SetLineColor(kMagenta+20);
-            histos[var_number][1].SetLineWidth(2.);
+            histos[var_number][3].SetFillColor(0);
+            histos[var_number][4].SetFillColor(0);
+            histos[var_number][5].SetFillColor(0);
+
+            histos[var_number][0].SetLineColor(kBlack);
+            histos[var_number][1].SetLineColor(kRed);
+            histos[var_number][2].SetLineColor(kBlue);
+            histos[var_number][3].SetLineColor(kGreen);
+            histos[var_number][4].SetLineColor(kOrange);
+            histos[var_number][5].SetLineColor(kYellow);
+
+
             histos[var_number][0].SetLineWidth(2.);
-
+            histos[var_number][1].SetLineWidth(2.);
             histos[var_number][2].SetLineWidth(2.);
-
+            histos[var_number][3].SetLineWidth(2.);
+            histos[var_number][4].SetLineWidth(2.);
+            histos[var_number][5].SetLineWidth(2.);
 
 
 
@@ -757,10 +747,16 @@ int main (int argc, char ** argv)
             auto m1= histos[var_number][0].GetMaximum();
             auto m2= histos[var_number][1].GetMaximum();
             auto m3= histos[var_number][2].GetMaximum();
+            auto m4= histos[var_number][3].GetMaximum();
+            auto m5= histos[var_number][4].GetMaximum();
+            auto m6= histos[var_number][5].GetMaximum();
 
-            histos[var_number][0].GetYaxis()->SetRangeUser(0.,max({m1,m2,m3})+0.05);
+            histos[var_number][0].GetYaxis()->SetRangeUser(0.,max({m1,m2,m3,m4,m5,m6})+0.05);
             histos[var_number][1].Draw("hist same");
             histos[var_number][2].Draw("hist same");
+            histos[var_number][3].Draw("hist same");
+            histos[var_number][4].Draw("hist same");
+            histos[var_number][5].Draw("hist same");
             histos[var_number][0].SetTitle(("Shapes "+variables[var_number]).c_str());
             histos[var_number][0].SetStats(0);
             histos[var_number][0].GetXaxis()->SetTitle(xlabel.c_str());
@@ -774,8 +770,8 @@ int main (int argc, char ** argv)
 
           	//To save the plots
 
-            p3->Print(("shape_"+plot_name+"_"+OPERATOR+".png").c_str(), "png");
-            p3->SaveAs(("shape_"+plot_name+"_"+OPERATOR+".root").c_str(), "root");
+            p3->Print((plot_name+"_shape.png").c_str(), "png");
+
         }
 
 
