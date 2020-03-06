@@ -39,6 +39,7 @@ Meanwhile the oders distribution were taken from normal generations.
 #include <THStack.h>
 #include <TText.h>
 #include <TLine.h>
+#include <TLatex.h>
 
 
 #include <TLorentzVector.h>
@@ -356,6 +357,7 @@ int main (int argc, char ** argv)
 
                 if (ntuple_number == 3) histo->Scale(1./wilson_coeff);  //linear term
     			if (ntuple_number == 4) histo->Scale(1./(wilson_coeff*wilson_coeff));  //quadratic term
+                if (ntuple_number == 5) histo->Scale(1./(0.3*0.3));
 
     			//overflow bin events moved in the last bin
                 //last bin content=last bin content + content of overflow bin
@@ -391,7 +393,7 @@ int main (int argc, char ** argv)
       for(int i=0;i<variables.size();i++){
           //doing stuff for this kinetic variable
           //creating all the root files
-          filename = "data_"+wc_string+"_"+variables[i]+".root";
+          filename = "data_"+wc_string+"_"+variables[i]+"twoOp.root";
           cout << "Creating this file:\t"<<filename<<endl;
           f = new TFile (filename.c_str(),"recreate");
           files.push_back(f);
@@ -507,7 +509,7 @@ int main (int argc, char ** argv)
 
             histos[var_number][4].Scale(wilson_coeff*wilson_coeff); // quadratic scaling relation
           	histos[var_number][3].Scale(wilson_coeff);	 // linear scaling relation
-
+            histos[var_number][5].Scale(wilson_coeff*wilson_coeff);
 
 
           	//PLOT
@@ -521,12 +523,17 @@ int main (int argc, char ** argv)
           			histos[var_number][j].SetBinContent(i, histos[var_number][j].GetBinContent(i)/histos[var_number][j].GetBinWidth(i));
           		}
           	}*/
-
+            histos[var_number][0].SetTitle("SM");
           	histos[var_number][0].SetFillStyle(3001);
+            histos[var_number][1].SetTitle("INT1");
           	histos[var_number][1].SetFillStyle(3001);
+            histos[var_number][2].SetTitle("BSM2");
             histos[var_number][2].SetFillStyle(3001);
+            histos[var_number][3].SetTitle("INT2");
           	histos[var_number][3].SetFillStyle(3001);
+            histos[var_number][4].SetTitle("BSM2");
           	histos[var_number][4].SetFillStyle(3001);
+            histos[var_number][5].SetTitle("INT12");
           	histos[var_number][5].SetFillStyle(3001);
 
             histos[var_number][0].SetFillColor(kBlack);
@@ -554,7 +561,7 @@ int main (int argc, char ** argv)
             // Upper plot will be in pad1
            TPad *pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
            pad1->SetBottomMargin(0); // Upper and lower plot are joined
-           pad1->SetGridx();         // Vertical grid
+           pad1->SetGrid();         // Vertical grid
            pad1->Draw();             // Draw the upper pad: pad1
            pad1->cd();               // pad1 becomes the current pad
 
@@ -566,13 +573,19 @@ int main (int argc, char ** argv)
          	h_stack->SetTitle(title.c_str());
          	string xlabel = string(variables[var_number]);
             xlabel += string(" (Gev)");
-         	string ylabel = "N° events";
+         	string ylabel = "N events";
 
 
             h_stack->Draw("HIST");
          	histo_sum->Draw("same hist");
 
-
+            TString nameLabel = Form ("L = %.1f fb^{-1}   (13 TeV)", luminosity);
+            auto tex3 = new TLatex(0.62,0.905,nameLabel.Data());
+            tex3->SetNDC();
+            tex3->SetTextFont(52);
+            tex3->SetTextSize(0.035);
+            tex3->SetLineWidth(2);
+            tex3->Draw("same");
 
          	if (variables[var_number]=="deltaetajj" ) xlabel = string("#eta units");
             else if (variables[var_number]=="deltaphijj") xlabel = string("#phi (rad)");
@@ -584,8 +597,20 @@ int main (int argc, char ** argv)
          	h_stack->GetYaxis()->SetTitle(ylabel.c_str());
          	h_stack->GetYaxis()->SetTitleSize(.05);
          	h_stack->GetYaxis()->SetTitleOffset(.9);
-            if (variables[var_number] !="deltaphijj") gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
-            else gPad->BuildLegend(0.1,0.7,0.48,0.9,"");
+
+            TLegend * legend;
+            if (variables[var_number] !="deltaphijj") legend = new TLegend(0.60,0.70,0.90,0.90);
+            else legend= new TLegend(0.1,0.7,0.48,0.9,"");
+            legend->AddEntry(&histos[var_number][0],"SM","f");
+            legend->AddEntry(&histos[var_number][1],"INT1","f");
+            legend->AddEntry(&histos[var_number][2],"BSM1","f");
+            legend->AddEntry(&histos[var_number][3],"INT2","f");
+            legend->AddEntry(&histos[var_number][4],"BSM2","f");
+            legend->AddEntry(&histos[var_number][5],"INT12","f");
+            legend->AddEntry(histo_sum,"EFT = SM + INT1 + BSM1 + INT2 + BSM2 + INT12","l");
+            legend->Draw("same");
+            //if (variables[var_number] !="deltaphijj") gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
+            //else gPad->BuildLegend(0.1,0.7,0.48,0.9,"");
          	/* if (var_number_plot < 7 || var_number_plot == 11) gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
          	else if (var_number_plot != 12) gPad->BuildLegend(0.55,0.14,0.85,0.34,"");
          	else gPad->BuildLegend(0.15,0.44,0.45,0.64,"");*/
@@ -616,13 +641,14 @@ int main (int argc, char ** argv)
            // Define the ratio plot
            TH1F *h3 = (TH1F*)histos[var_number][0].Clone("h3");
            h3->SetLineColor(kBlack);
-           /*h3->SetMinimum(0);  // Define Y ..
+           h3->SetMinimum(0);  // Define Y ..
            h3->SetMaximum(2); // .. range
-           */
+
            h3->Sumw2();
            h3->SetStats(0);      // No statistics on lower plot
            h3->Divide(histo_sum);
            h3->SetMarkerStyle(21);
+           h3->GetYaxis()->SetTitle("SM/EFT");
            h3->Draw("ep");       // Draw the ratio plot
 
            TLine *line1 = new TLine( h3->GetXaxis()->GetXmin(),1,h3->GetXaxis()->GetXmax(),1);
@@ -651,9 +677,11 @@ int main (int argc, char ** argv)
            h3->GetYaxis()->SetNdivisions(505);
            h3->GetYaxis()->SetTitleSize(20);
            h3->GetYaxis()->SetTitleFont(43);
-           h3->GetYaxis()->SetTitleOffset(1.55);
+           h3->GetYaxis()->SetTitleOffset(0.9);
            h3->GetYaxis()->SetLabelFont(43); // Absolute font size in pixel (precision 3)
            h3->GetYaxis()->SetLabelSize(15);
+
+           //h3->GetYaxis()->SetTitleOffset(1.55);
 
            // X axis ratio plot settings
            h3->GetXaxis()->SetTitle(xlabel.c_str());
@@ -663,7 +691,6 @@ int main (int argc, char ** argv)
            h3->GetXaxis()->SetTitleOffset(3);
            h3->GetXaxis()->SetLabelFont(43); // Absolute font size in pixel (precision 3)
            h3->GetXaxis()->SetLabelSize(15);
-           h3->GetYaxis()->SetRangeUser(0,2);
 
 
            //h3->GetXaxis()->SetTitleOffset(.9);

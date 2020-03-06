@@ -137,8 +137,14 @@ int main (int argc, char** argv)
 	h2->SetStats(0);
 	for (i=1;i<=9;i++){
             h2->SetBinContent(i, range_95_sorted[i-1]);
-            cout << x_axis_sorted[i-1] <<"\t" <<range_68_sorted[i-1]<<"\t"<<range_95_sorted[i-1] <<endl;
+
+            cout <<"&\t"<<range_68[i-1]<<endl;
+            //cout << x_axis_sorted[i-1] <<"\t" <<range_68_sorted[i-1]<<"\t"<<range_95_sorted[i-1] <<endl;
     }
+    cout << x_axis_sorted[0].c_str() <<endl;
+    /*for (i=1;i<=9;i++){
+        cout << "&\t"<<range_68_sorted[i-1];
+    }*/
 
     h1->SetMaximum(1.1*range_95_sorted[8]);
 	h2->Draw("b same");
