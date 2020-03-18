@@ -31,6 +31,7 @@ to run: ./datacard_creator file.cfg
 #include <TText.h>
 #include <TLine.h>
 #include <TLatex.h>
+#include "setTDRStyle.C"
 
 
 #include <TLorentzVector.h>
@@ -338,7 +339,9 @@ int main (int argc, char ** argv)
                       abs(*etaj2) < cuts["etaj2"] && abs(*etaj1 - *etaj2) > cuts["deltaetajj"])
     				{
                         if (variables[var_number]!="deltaetajj" && variables[var_number]!="deltaphijj" && variables[var_number]!="noshape"){
-                            histo->Fill(*var,*weight);
+                            if(*weight>0){
+                                histo->Fill(*var,*weight);
+                            }
                         }
     					else if (variables[var_number]=="deltaetajj") histo->Fill(abs(*etaj1 - *etaj2), *weight); //deltaetajj
     					else if (variables[var_number]=="deltaphijj") //deltaphijj
@@ -491,15 +494,15 @@ int main (int argc, char ** argv)
         histos[1][2].Draw("hist same");
         histos[1][1].Draw("hist same");
         gPad->BuildLegend(0.60,0.70,0.90,0.90,"");*/
-
+        setTDRStyle();
       	vector <TCanvas*> cnv;
         //TCanvas * p,p1,p2,p3;
         for(int var_number=0;var_number<variables.size();var_number++){
             string canvas_name="cnv"+to_string(var_number);
             //p=new TCanvas(canvas_name.c_str(),canvas_name.c_str(),0,0,1800,800);
-            TCanvas * p1 = new TCanvas("uno","uno",0,0,1000,800);
-            TCanvas * p2 = new TCanvas("due","due",0,0,1000,800);
-            TCanvas * p3 = new TCanvas("tre","tre",0,0,1000,800);
+            TCanvas * p1 = new TCanvas("uno","uno",0,0,1000,1000);
+            TCanvas * p2 = new TCanvas("due","due",0,0,1000,1000);
+            TCanvas * p3 = new TCanvas("tre","tre",0,0,1000,1000);
             /*cnv.push_back(p1);
             cnv.push_back(p2);
             cnv.push_back(p3);*/
@@ -578,7 +581,8 @@ int main (int argc, char ** argv)
             replace(a, ".", "p");
 
          	string title = variables[var_number] + " (c"+OPERATOR+" = " + ss_title.str() + ")";
-            h_stack->SetTitle(title.c_str());
+            //h_stack->SetTitle(title.c_str());
+            h_stack->SetTitle("");
          	string xlabel = string(variables[var_number]);
             xlabel += string(" (Gev)");
          	string ylabel = "N events";
@@ -608,7 +612,7 @@ int main (int argc, char ** argv)
          	h_stack->GetYaxis()->SetTitleOffset(.9);
 
             TLegend * legend;
-            if (variables[var_number] !="deltaphijj") legend = new TLegend(0.60,0.70,0.90,0.90);
+            if (variables[var_number] !="deltaphijj") legend = new TLegend(0.50,0.60,0.90,0.90);
             else legend= new TLegend(0.1,0.7,0.48,0.9,"");
             legend->AddEntry(&histos[var_number][0],"SM","f");
             legend->AddEntry(&histos[var_number][1],"INT","f");
@@ -660,9 +664,9 @@ int main (int argc, char ** argv)
            c->cd();          // Go back to the main canvas before defining pad2*/
            //p->cd(1);
            p1->cd();
-           TPad *pad2 = new TPad("pad2", "pad2", 0, 0.05, 1, 0.3);
+           TPad *pad2 = new TPad("pad2", "pad2", 0, 0.0, 1, 0.3);
            pad2->SetTopMargin(0);
-           pad2->SetBottomMargin(0.2);
+           pad2->SetBottomMargin(0.3);
            pad2->SetGrid(); // vertical grid
            pad2->Draw();
            pad2->cd();       // pad2 becomes the current pad
@@ -715,13 +719,14 @@ int main (int argc, char ** argv)
            // X axis ratio plot settings
            h3->GetXaxis()->SetTitle(xlabel.c_str());
            //h3->GetXaxis()->SetTitleSize(.05);
-           h3->GetXaxis()->SetTitleSize(20);
+           h3->GetXaxis()->SetTitleSize(40);
            h3->GetXaxis()->SetTitleFont(43);
            h3->GetXaxis()->SetTitleOffset(3);
            h3->GetXaxis()->SetLabelFont(43); // Absolute font size in pixel (precision 3)
            h3->GetXaxis()->SetLabelSize(15);
 
-
+           //p1->SetBorderSize(6);
+           //p1->SetHighLightColor(kBlue);
            //h3->GetXaxis()->SetTitleOffset(.9);
            string plot_name;
            if(g_syntax=="true"){
@@ -731,19 +736,23 @@ int main (int argc, char ** argv)
                plot_name = variables[var_number]+"_"+a;
            }
            //p->Print(plot_name.c_str(), "png");
+
+
            p1->Print(("dist_"+plot_name+"_"+OPERATOR+".png").c_str(), "png");
            p1->SaveAs(("dist_"+plot_name+"_"+OPERATOR+".root").c_str(), "root");
           	//p->cd(2);
-            p2->cd();
+
+            /*p2->cd();
           	//LOGARITHMIC PLOT
           	gPad->SetLogy();
           	h_stack->Draw("HIST");
           	histo_sum->Draw("same hist");
           	string title_log = title + " (log scale)";
-          	h_stack->SetTitle(title_log.c_str());
+          	//h_stack->SetTitle(title_log.c_str());
+            h_stack->SetTitle("");
           	if (variables[var_number] !="deltaphijj") gPad->BuildLegend(0.60,0.70,0.90,0.90,"");
             else gPad->BuildLegend(0.1,0.7,0.48,0.9,"");
-            /*else if (var_number_plot != 12) gPad->BuildLegend(0.55,0.14,0.85,0.34,"");*/
+            /*else if (var_number_plot != 12) gPad->BuildLegend(0.55,0.14,0.85,0.34,"");
 
 
 
@@ -786,7 +795,8 @@ int main (int argc, char ** argv)
             histos[var_number][0].GetYaxis()->SetRangeUser(0.,max({m1,m2,m3})+0.05);
             histos[var_number][1].Draw("hist same");
             histos[var_number][2].Draw("hist same");
-            histos[var_number][0].SetTitle(("Shapes "+variables[var_number]).c_str());
+            //histos[var_number][0].SetTitle(("Shapes "+variables[var_number]).c_str());
+            histos[var_number][0].SetTitle("");
             histos[var_number][0].SetStats(0);
             histos[var_number][0].GetXaxis()->SetTitle(xlabel.c_str());
 
@@ -800,7 +810,7 @@ int main (int argc, char ** argv)
           	//To save the plots
 
             p3->Print(("shape_"+plot_name+"_"+OPERATOR+".png").c_str(), "png");
-            p3->SaveAs(("shape_"+plot_name+"_"+OPERATOR+".root").c_str(), "root");
+            p3->SaveAs(("shape_"+plot_name+"_"+OPERATOR+".root").c_str(), "root");*/
         }
 
 
