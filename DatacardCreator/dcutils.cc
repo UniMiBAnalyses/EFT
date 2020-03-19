@@ -30,7 +30,7 @@ bool replace (std::string& str, const std::string& from, const std::string& to)
 {
     size_t start_pos = str.find (from) ;
     if (start_pos == std::string::npos) return false;
-    str.replace(start_pos, from.length (), to) ;
+    str.replace (start_pos, from.length (), to) ;
     return true ;
 }
 
@@ -122,7 +122,7 @@ readNtupleFile (string rootFileName, string ntupleName,
       output_histos[variables.at (i)] = new TH1F 
         (
           (hTag + variables.at (i)).c_str (), hTitle.c_str (),
-          edges.size (),
+          edges.size () - 1,
           edges.data ()
         ) ;
     }
