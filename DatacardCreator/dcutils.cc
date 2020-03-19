@@ -13,12 +13,17 @@
 
 using namespace std ;
 
+
+// for debugging purposes
 void printvector (vector<string> & v)
 {
   for (int i = 0 ; i < v.size () ; ++i) cout << "\t" << v.at (i) ;
   cout << endl ;	
   return ;
 }
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 
 bool replace (std::string& str, const std::string& from, const std::string& to) 
@@ -130,6 +135,13 @@ readNtupleFile (string rootFileName, string ntupleName,
       cuts[cutslist[iCut]] = gConfigParser->readFloatOpt ("cuts::" + cutslist[iCut]) ;
     } 
 
+  map <string, float> uppercuts ;
+  vector<string> uppercutslist = gConfigParser->readListOfOpts ("uppercuts") ;
+  for (int iCut = 0 ; iCut < uppercutslist.size () ; ++iCut)
+    {
+      uppercuts[uppercutslist[iCut]] = gConfigParser->readFloatOpt ("cuts::" + uppercutslist[iCut]) ;
+    } 
+
   // open the input file and extract general info concerning the sample 
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
@@ -155,6 +167,7 @@ readNtupleFile (string rootFileName, string ntupleName,
   // all variables to be saved and to be cut on have to be read
   vector<string> allvars = variables ;
   allvars.insert (allvars.end (), cutslist.begin (), cutslist.end ()) ;
+  allvars.insert (allvars.end (), uppercutslist.begin (), uppercutslist.end ()) ;
   sort (allvars.begin (), allvars.end ()) ;
   vector<string>::iterator it = unique (allvars.begin (), allvars.end ()) ;
   allvars.resize (distance (allvars.begin (), it)) ;
@@ -188,6 +201,16 @@ readNtupleFile (string rootFileName, string ntupleName,
            ++iCut)
         {
           if (*(treeReaderValues.at (iCut->first)) < iCut->second) 
+            {
+              save = false ;
+              break ;
+            } 
+        } 
+      for (map<string, float>::const_iterator iCut = uppercuts.begin () ;
+           iCut != uppercuts.end () ;
+           ++iCut)
+        {
+          if (*(treeReaderValues.at (iCut->first)) > iCut->second) 
             {
               save = false ;
               break ;
