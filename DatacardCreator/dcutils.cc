@@ -282,8 +282,8 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   string rootfilename = prefix + "_" + varname + ".root" ;
   TFile outf (rootfilename.c_str (), "recreate") ;
   h_SM->Write ("histo_sm") ;
-  h_SM->Write ("histo_linear") ;
-  h_SM->Write ("histo_quadratic") ;
+  h_LI->Write ("histo_linear") ;
+  h_QU->Write ("histo_quadratic") ;
   outf.Close () ;
 
   // create the root file containing the three histograms
