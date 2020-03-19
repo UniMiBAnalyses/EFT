@@ -50,13 +50,16 @@ int main (int argc, char ** argv)
   //otherwise if you don't want to use my syntax(which I highly reccomend not to do)
   //string infile = gConfigParser->readStringListOpt ("general::infile") ;
 
-  // reading input files information
+  // reading input and output files information
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
   //name of ntuples in this order: sm, linear(interference), quadratic(BSM)
   //also the evtNum_nisto_names should be in the format name_ntuple_nums(which also Vittorio used)
   vector<string> input_files = gConfigParser->readStringListOpt ("general::input_files") ;
   vector<string> name_ntuples = gConfigParser->readStringListOpt ("general::name_ntuples") ;
+
+  string outfilesprefix = gConfigParser->readStringOpt ("general::outfilesprefix") ;
+  string destinationfolder = gConfigParser->readStringOpt ("general::destinationfolder") ;
 
   // reading the physics from the input files
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
@@ -74,7 +77,6 @@ int main (int argc, char ** argv)
   // creating datacards and rootfile for each variable
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
-  string outfilesprefix = gConfigParser->readStringOpt ("general::outfilesprefix") ;
   outfilesprefix += ("_" + EFT_operator) ;
   //loop on variables 
   for (map<string, TH1F* >::const_iterator iHisto = hmap_SM.begin () ;
@@ -85,7 +87,7 @@ int main (int argc, char ** argv)
       TH1F * h_SM = iHisto->second ;
       TH1F * h_LI = hmap_LI.at (iHisto->first) ;
       TH1F * h_QU = hmap_QU.at (iHisto->first) ;
-      createDataCard (h_SM, h_LI, h_QU, outfilesprefix, iHisto->first) ;
+      createDataCard (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first) ;
     } 
   return 0 ;
 }

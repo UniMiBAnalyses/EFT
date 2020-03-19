@@ -223,6 +223,7 @@ readNtupleFile (string rootFileName, string ntupleName,
            iHisto != output_histos.end () ;
            ++iHisto)
         {
+          if (iHisto->first == "noshape") continue ; 
           iHisto->second->Fill ( *(treeReaderValues.at (iHisto->first)), *weight) ;
         }
       if (savenoshape) output_histos["noshape"]->Fill (1., *weight) ;
@@ -299,10 +300,10 @@ checkEmptyBins (std::map<std::string, TH1F *> & hMap)
 
 int 
 createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
-                string prefix, string varname) 
+                string destinationfolder, string prefix, string varname) 
 {
   // create the root file containing the three histograms
-  string rootfilename = prefix + "_" + varname + ".root" ;
+  string rootfilename = destinationfolder + "/" + prefix + "_" + varname + ".root" ;
   TFile outf (rootfilename.c_str (), "recreate") ;
   h_SM->Write ("histo_sm") ;
   h_LI->Write ("histo_linear") ;
@@ -310,7 +311,7 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   outf.Close () ;
 
   // create the root file containing the three histograms
-  string txtfilename = prefix + "_" + varname + ".txt" ;
+  string txtfilename = destinationfolder + "/" + prefix + "_" + varname + ".txt" ;
   ofstream output_datacard (txtfilename.c_str ()) ;
 
   string separator= "-------------------------------------------------------\n" ;

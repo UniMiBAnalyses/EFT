@@ -33,7 +33,7 @@ checkEmptyBins (std::map<std::string, TH1F *> & hMap) ;
 
 int 
 createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
-                std::string prefix, std::string varname) ;
+                std::string destinationfolder, std::string prefix, std::string varname) ;
 
 
 
