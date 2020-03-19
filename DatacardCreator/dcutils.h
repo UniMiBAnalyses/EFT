@@ -4,6 +4,7 @@
 #define dcutils_h
 
 #include "TH1F.h"
+
 #include <vector>
 #include <map>
 #include <string>
@@ -35,6 +36,10 @@ int
 createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
                 std::string destinationfolder, std::string prefix, std::string varname) ;
 
+int 
+plotHistos (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
+            std::string destinationfolder, std::string prefix, std::string varname, 
+            float wilson_gen, float wilson_plot = 1., bool log = false) ;
 
 
 #endif

@@ -39,12 +39,13 @@ int main (int argc, char ** argv)
 
   CfgParser * gConfigParser = new CfgParser (argv[1]) ;
 
- // reading generic parameters of the generation
+  // reading generic parameters of the generation
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
   //wilson_coeff should be a float like 0.3, it will be processed after
   //FIXME TO BE RATIONALISED
   float wilson_coeff = gConfigParser->readFloatOpt ("general::wilson_coeff_generation_value") ;
+  float wilson_coeff_plots = gConfigParser->readFloatOpt ("general::wilson_coeff_plots") ;
   string EFT_operator = gConfigParser->readStringOpt ("general::operator") ;
 
   //otherwise if you don't want to use my syntax(which I highly reccomend not to do)
@@ -88,6 +89,9 @@ int main (int argc, char ** argv)
       TH1F * h_LI = hmap_LI.at (iHisto->first) ;
       TH1F * h_QU = hmap_QU.at (iHisto->first) ;
       createDataCard (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first) ;
+      plotHistos     (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first, wilson_coeff, wilson_coeff_plots) ;
+      plotHistos     (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first, wilson_coeff, wilson_coeff_plots, true) ;
+
     } 
   return 0 ;
 }
