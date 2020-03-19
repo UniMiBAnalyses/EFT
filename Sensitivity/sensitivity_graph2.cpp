@@ -41,7 +41,7 @@ vector<size_t> sort_indexes(const vector<T> &v) {
 int main (int argc, char** argv)
 {
     TApplication* myapp = new TApplication ("myapp", NULL, NULL);
-	TCanvas* cnv = new TCanvas("c1","gerrors2",200,10,1000,500);
+	TCanvas* cnv = new TCanvas("c1","gerrors2",200,10,1200,700);
     gStyle->SetOptStat(0);
 
 
@@ -56,7 +56,7 @@ int main (int argc, char** argv)
    string op;
    float x, y, yerrl95, yerrl68, yerrh68, yerrh95;
    int i=0;
-   ifstream file("sensitivity3.txt");
+   ifstream file("../DatacardCreator/sensitivity_prova.txt");
    float max_err=-1;
    float m;
    while(i<15){
@@ -84,7 +84,7 @@ int main (int argc, char** argv)
    for(int i=0;i<15;i++) x_noshape_v.push_back(i+0.7);
 
    i=0;
-   ifstream file1("noshape.txt");
+   ifstream file1("../DatacardCreator/noshape_prova.txt");
    while(i<15){
 
        file1 >> y >> yerrl95 >> yerrl68 >>yerrh68 >>yerrh95 >> op;
@@ -128,10 +128,11 @@ int main (int argc, char** argv)
   TH2F *hr = new TH2F("hr","Sensitivity",15,0,15,2,-m,m);
   hr->GetXaxis()->SetLabelOffset(1);
   hr->GetXaxis()->SetNdivisions(15);
-  hr->SetYTitle("Y title");
+  hr->SetYTitle("Range");
   hr->Draw();
   cnv->GetFrame()->SetFillColor(21);
   cnv->GetFrame()->SetBorderSize(12);
+  //cnv->SetLogy();
    vector<float> xerr_v;
    for(int i=0;i<15;i++) xerr_v.push_back(0);
    //constructor of TGraphAsymmErrors is (N,x,y,x_err_low,x_err_high,y_err_low,y_err_high)
@@ -165,7 +166,7 @@ int main (int argc, char** argv)
    t->SetTextFont(72);
    //char * operators[15] = {"cHD","cHbox","cW","cHW","cHWB","cll","cHl1","cHl3","cHq1","cHq3","cll1","cqq1","cqq11","cqq3","cqq31"};
    for (Int_t i=0;i<15;i++) {
-      t->DrawText(x68_v[i]+0.1,-m-0.4,operators_o[i].c_str());
+      t->DrawText(x68_v[i]+0.1,-1.1*m,operators_o[i].c_str());
   }
   TLine *line1 = new TLine( 0,0,15,0);
   line1->SetLineWidth(2);
