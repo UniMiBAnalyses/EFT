@@ -67,12 +67,18 @@ THe following script tests its consistency.
                       -o  model_test.root   
 where:
 
-| option                                        | meaning                                                     |
-| --------------------------------------------- | ----------------------------------------------------------- |
-| ```HiggsAnalysis.AnalyticAnomalousCoupling``` | folder of *SOMETHING*                                       |
-| ```analiticAnomalousCoupling```               | object of *SOMETHING*                                       |
-| ```--PO = k_my,r```                           | define the physics observables to be ```k_my``` and ```r``` |
-| ```-o model_test.root```                      | filename of the workspace created                           |
+| option                                        | meaning                                                                    |
+| --------------------------------------------- | -------------------------------------------------------------------------- |
+| ```-P PHYSMODEL```                            | Physics model to use. It should be in the form (module name):(object name) |
+| ```HiggsAnalysis.AnalyticAnomalousCoupling``` | module name of the physics model, it's a folder                            |
+| ```analiticAnomalousCoupling```               | object name of the physics model                                           |
+| ```--PO = k_my,r```                           | define the physics observables to be ```k_my``` and ```r```                |
+| ```-o model_test.root```                      | filename of the workspace created                                          |
+
+the workspace created can be printed for inspection:
+
+    root model_test.root
+    w->Print ()
 
 ### B) fit
 
@@ -88,28 +94,31 @@ Simulate with k_my set to 1 and r=1
 
 Where:
 
-| option                                 | meaning                                                            |
-| -------------------------------------- | ------------------------------------------------------------------ |
-| ```-M```                               | *DO SOMETHING*                                                     |
-| ```--algo=grid```                      | choose the algorithm ```grid``` to *DO SOMETHING*                  |
-| ```--points 120```                     | set to 120 the number of points in *DOING SOMETHING*               |
-| ```-m 125```                           | set the Higgs boson mass to 125 GeV *???????*                      |
-| ```-t -1```                            | *DO SOMETHING???*                                                  |
-| ```--expectSignal=1```                 | *DO SOMETHING???*                                                  |
-| ```--redefineSignalPOIs k_my```        | set ```k_my``` as the only physics observable in the fit           |
-| ```--freezeParameters r```             | the parameter ```r``` has a value which will not change in the fit |
-| ```--setParameters r=1```              | the value to which ```r``` is frozen                               |
-| ```--setParameterRanges k_my=-20,20``` | range of variability of the free parameter considered in the fit   |
-| ```--verbose -1```                     | verbosity set to minimum                                           |
+| option                                 | meaning                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| ```-M MultiDimFit```                   | use the method ```MultiDimFit``` to extract upper limits                                         |
+| ```--algo=grid```                      | choose the algorithm ```grid``` to compute uncertainties                                         |
+| ```--points 120```                     | set to 120 the number of points in *DOING SOMETHING*                                             |
+| ```-m 125```                           | set the Higgs boson mass to 125 GeV                                                              |
+| ```-t -1```                            | number of Toy MC extractions                                                                     |
+| ```--expectSignal=1```                 | generate *signal* toys instead of background ones, with the specified signal strength.           |
+| ```--redefineSignalPOIs k_my```        | set ```k_my``` as the only physics observable in the fit                                         |
+| ```--freezeParameters r```             | the parameter ```r``` has a value which will not change in the fit                               |
+| ```--setParameters r=1```              | the value to which ```r``` is frozen                                                             |
+| ```--setParameterRanges k_my=-20,20``` | range of variability of the free parameter considered in the fit                                 |
+| ```--verbose -1```                     | verbosity set to minimum                                                                         |
 
 
 To simulate "sm" part, k_my == 0 (this is how we simulate the expected result with "sm") :
         
-    combine -M MultiDimFit model_test.root  --algo=grid --points 120  -m 125   -t -1 --expectSignal=1     \
-        --redefineSignalPOIs k_my --freezeParameters r --setParameters r=1,k_my=0   --setParameterRanges k_my=-20,20   
+    combine -M MultiDimFit model_test.root                  \           
+            --algo=grid --points 120  -m 125                \              
+            -t -1 --expectSignal=1                          \      
+            --redefineSignalPOIs k_my                       \     
+            --freezeParameters r --setParameters r=1,k_my=0 \                             
+            --setParameterRanges k_my=-20,20
     
-
-### C) plot:
+### C) plot the profile likelihood obtained
 
     cd $CMSSW_BASE/src/HiggsAnalysis/AnalyticAnomalousCoupling/test/
 
