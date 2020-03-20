@@ -58,8 +58,10 @@ Download our fitting model and compile it
 
 ### A) generate a RooFit workspace starting from the datacards
 
-The workspace is the .... ? *FIXME*.
-THe following script tests its consistency.
+The workspace is the RooFit container that holds all the information needed by Combine di perform fits.
+THe following script creates the workspace starting from the txt and root files 
+produced by datacard_creator and datacard_creator_2
+of EFT/DatacardCreator.
 
     text2workspace.py datacard.txt \
                       -P HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:analiticAnomalousCoupling \
@@ -79,10 +81,15 @@ The module ```HiggsAnalysis.AnalyticAnomalousCoupling``` is actually implemented
 ```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCoupling.py```,
 ```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCouplingTwoOp.py``` and
 ```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCouplingOneOp.py```.
-the workspace created can be printed for inspection:
+**NB** the root file is searched for in the subfolder indicated in the txt file, 
+       by the ```text2workspace.py``` script.
+The workspace created can be printed for inspection:
 
-    root model_test.root
+    root -b model_test.root
     w->Print ()
+
+When using datacard_creator_2, a shell script is also created,
+that contains the commands to be issued to actually create the workspaces.
 
 ### B) fit
 
