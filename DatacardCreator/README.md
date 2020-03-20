@@ -22,6 +22,11 @@ the files to be read and some detailed configuration parameters
   * for each variable as an input in the cfg file,   
     ```datacard_creator_2.cpp``` produces a pair of files:
     a root file containing histograms and a datacard for Combine.
+  * In the folder where datacards are stored, a shell script gets created,
+    that contains the commands to be run to create the roofit workspaces
+    needed by Combine. 
+    The script should be sourced from an environment built according to the indications
+    present in EFT/Fit.
 
 ## datacard\_twoOp\_creator
 It is used to study two operators together creating, as datacard\_creator both datacard files and plots.
