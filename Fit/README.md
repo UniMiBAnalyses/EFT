@@ -74,16 +74,6 @@ where:
 | ```--PO = k_my,r```                           | define the physics observables to be ```k_my``` and ```r``` |
 | ```-o model_test.root```                      | filename of the workspace created                           |
 
-
-AnomalousCoupling   file.py
-
-oggetto analiticAnomalousCoupling
-
-
-  * ```HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:analiticAnomalousCoupling``` is the folder 
-  *                    file.py            
-  *  object defined in the file.py
-
 ### B) fit
 
 Simulate with k_my set to 1 and r=1
