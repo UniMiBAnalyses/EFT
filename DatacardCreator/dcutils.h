@@ -32,7 +32,7 @@ scaleAllHistos (std::map<std::string, TH1F *> & hMap, float value) ;
 void 
 checkEmptyBins (std::map<std::string, TH1F *> & hMap) ;
 
-int 
+std::string 
 createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
                 std::string destinationfolder, std::string prefix, std::string varname) ;
 

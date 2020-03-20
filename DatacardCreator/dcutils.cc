@@ -449,7 +449,7 @@ checkEmptyBins (std::map<std::string, TH1F *> & hMap)
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 
-int 
+string 
 createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
                 string destinationfolder, string prefix, string varname) 
 {
@@ -463,7 +463,7 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
 
   // create the root file containing the three histograms
   string txtfilename = destinationfolder + "/" + prefix + "_" + varname + ".txt" ;
-  ofstream output_datacard (txtfilename.c_str ()) ;
+  ofstream output_datacard (txtfilename) ;
 
   string separator= "-------------------------------------------------------\n" ;
   output_datacard << separator ;
@@ -488,8 +488,20 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   output_datacard <<separator ;
   output_datacard <<"lumi\t\tlnN\t1.02\t1.02\t1.02\n";
   output_datacard <<"bla\t\tlnN\t-\t-\t1.05\n";
+  output_datacard.close () ;
 
-  return 0 ;
+  string combine_command = "text2workspace.py " ;
+  combine_command += txtfilename ;
+
+  combine_command += " -P HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:analiticAnomalousCoupling" ;
+  combine_command += " --PO=k_my,r" ;
+  combine_command += " -o " ;
+  replace (rootfilename, ".root", "_WS.root") ;
+  combine_command += rootfilename ;
+
+
+
+  return combine_command ;
 }
 
 

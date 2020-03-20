@@ -79,7 +79,8 @@ int main (int argc, char ** argv)
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
   outfilesprefix += ("_" + EFT_operator) ;
-  //loop on variables 
+  vector<string> WScreation_commands ;
+  //loop on variables   
   for (map<string, TH1F* >::const_iterator iHisto = hmap_SM.begin () ;
        iHisto != hmap_SM.end () ;
        ++iHisto)
@@ -88,10 +89,23 @@ int main (int argc, char ** argv)
       TH1F * h_SM = iHisto->second ;
       TH1F * h_LI = hmap_LI.at (iHisto->first) ;
       TH1F * h_QU = hmap_QU.at (iHisto->first) ;
-      createDataCard (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first) ;
+      WScreation_commands.push_back (
+          createDataCard (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first)
+        ) ;
       plotHistos     (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first, wilson_coeff, wilson_coeff_plots) ;
       plotHistos     (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first, wilson_coeff, wilson_coeff_plots, true) ;
 
     } 
+
+  ofstream WScreation_script (destinationfolder + "/launchWScreation.sh") ;
+  WScreation_script << "#!/usr/bin/bash\n" ;
+  WScreation_script << "\n" ;
+  for (int i = 0 ; i < WScreation_commands.size () ; ++i)
+       WScreation_script << WScreation_commands.at (i) << "\n" ;
+  WScreation_script.close () ;
+
+  cout << "datacards and plots created\n" ;
+  cout << "to convert datacards in workspaces, run (from the same folder where datacard_creator_2 was executed): \n";
+  cout << "source " << destinationfolder << "/launchWScreation.sh\n" ;
   return 0 ;
 }
