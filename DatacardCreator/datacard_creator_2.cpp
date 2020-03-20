@@ -79,7 +79,7 @@ int main (int argc, char ** argv)
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
   outfilesprefix += ("_" + EFT_operator) ;
-  vector<string> WScreation_commands ;
+  vector<pair <string, string> > WScreation_commands ;
   //loop on variables   
   for (map<string, TH1F* >::const_iterator iHisto = hmap_SM.begin () ;
        iHisto != hmap_SM.end () ;
@@ -101,11 +101,20 @@ int main (int argc, char ** argv)
   WScreation_script << "#!/usr/bin/bash\n" ;
   WScreation_script << "\n" ;
   for (int i = 0 ; i < WScreation_commands.size () ; ++i)
-       WScreation_script << WScreation_commands.at (i) << "\n" ;
+       WScreation_script << WScreation_commands.at (i).first << "\n" ;
   WScreation_script.close () ;
 
-  cout << "datacards and plots created\n" ;
-  cout << "to convert datacards in workspaces, run (from the same folder where datacard_creator_2 was executed): \n";
+  ofstream fitting_script (destinationfolder + "/launchFitting.sh") ;
+  fitting_script << "#!/usr/bin/bash\n" ;
+  fitting_script << "\n" ;
+  for (int i = 0 ; i < WScreation_commands.size () ; ++i)
+       fitting_script << WScreation_commands.at (i).second << "\n" ;
+  fitting_script.close () ;
+
+  cout << "Datacards and plots created.\n" ;
+  cout << "To convert datacards in workspaces, run (from the same folder where datacard_creator_2 was executed): \n";
   cout << "source " << destinationfolder << "/launchWScreation.sh\n" ;
+  cout << "To launch the fitting process, run (from the same folder where datacard_creator_2 was executed): \n";
+  cout << "source " << destinationfolder << "/launchFitting.sh\n" ;
   return 0 ;
 }

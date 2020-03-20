@@ -449,7 +449,7 @@ checkEmptyBins (std::map<std::string, TH1F *> & hMap)
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 
-string 
+pair <string, string>  
 createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
                 string destinationfolder, string prefix, string varname) 
 {
@@ -490,18 +490,25 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   output_datacard <<"bla\t\tlnN\t-\t-\t1.05\n";
   output_datacard.close () ;
 
-  string combine_command = "text2workspace.py " ;
-  combine_command += txtfilename ;
-
-  combine_command += " -P HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:analiticAnomalousCoupling" ;
-  combine_command += " --PO=k_my,r" ;
-  combine_command += " -o " ;
+  string wscreation_command = "text2workspace.py " ;
+  wscreation_command += txtfilename ;
+  wscreation_command += " -P HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:analiticAnomalousCoupling" ;
+  wscreation_command += " --PO=k_my,r" ;
+  wscreation_command += " -o " ;
   replace (rootfilename, ".root", "_WS.root") ;
-  combine_command += rootfilename ;
+  wscreation_command += rootfilename ;
 
+  string fitting_command = "combine -M MultiDimFit " + rootfilename ;
+  fitting_command += " --algo=grid --points 120  -m 125" ;
+  fitting_command += " -t -1 --expectSignal=1" ;
+  fitting_command += " --redefineSignalPOIs k_my" ;
+  fitting_command += " --freezeParameters r --setParameters r=1" ;
+  fitting_command += " --setParameterRanges k_my=-20,20" ;
+  fitting_command += " --verbose -1" ;
+  replace (rootfilename, "_WS.root", "_fitresult.root") ;
+  fitting_command += " ; mv higgsCombineTest.MultiDimFit.mH125.root " + rootfilename  ;
 
-
-  return combine_command ;
+  return pair <string, string> (wscreation_command, fitting_command) ;
 }
 
 

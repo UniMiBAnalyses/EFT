@@ -89,7 +89,8 @@ The workspace created can be printed for inspection:
     w->Print ()
 
 When using datacard_creator_2, a shell script is also created,
-that contains the commands to be issued to actually create the workspaces.
+that contains the commands to be issued to actually create the workspaces, 
+and one to have Combine perform the fits.
 
 ### B) fit
 
