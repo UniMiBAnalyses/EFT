@@ -75,6 +75,10 @@ where:
 | ```--PO = k_my,r```                           | define the physics observables to be ```k_my``` and ```r```                |
 | ```-o model_test.root```                      | filename of the workspace created                                          |
 
+The module ```HiggsAnalysis.AnalyticAnomalousCoupling``` is actually implemented in 
+```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCoupling.py```,
+```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCouplingTwoOp.py``` and
+```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCouplingOneOp.py```.
 the workspace created can be printed for inspection:
 
     root model_test.root
@@ -108,7 +112,6 @@ Where:
 | ```--setParameterRanges k_my=-20,20``` | range of variability of the free parameter considered in the fit                                 |
 | ```--verbose -1```                     | verbosity set to minimum                                                                         |
 
-
 To simulate "sm" part, k_my == 0 (this is how we simulate the expected result with "sm") :
         
     combine -M MultiDimFit model_test.root                  \           
@@ -121,6 +124,6 @@ To simulate "sm" part, k_my == 0 (this is how we simulate the expected result wi
 ### C) plot the profile likelihood obtained
 
     cd $CMSSW_BASE/src/HiggsAnalysis/AnalyticAnomalousCoupling/test/
-
-    root -l     higgsCombineTest.MultiDimFit.mH125.root  higgsCombineTest.MultiDimFit.mH125.root   draw.cxx
+    root -l higgsCombineTest.MultiDimFit.mH125.root  \
+            higgsCombineTest.MultiDimFit.mH125.root draw.cxx
 
