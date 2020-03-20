@@ -21,7 +21,9 @@ Prepare a CMSSW release where to install combine,
 which sets the proper compiling environment with a consistent set of libraries
 to be linked in the compilation process
 (the command ```cmsenv``` sets all the shell environment variables needed for compiling and running
-once and for all):
+once and for all).
+Since the CMSSW and Combine code is taken from a Git repository, it's suggested to install it
+*outside* of the EFT folder.
 
     cmsrel CMSSW_10_2_13
     cd CMSSW_10_2_13/src
@@ -54,18 +56,62 @@ Download our fitting model and compile it
     
 ## Fit and get results:
 
-### A) text2workspace
+### A) generate a RooFit workspace starting from the datacards
 
-                                                             folder                    file.py             object defined in the file.py
-    text2workspace.py        datacard.txt     -P HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:analiticAnomalousCoupling                 --PO=k_my,r  -o      model_test.root   
+The workspace is the .... ? *FIXME*.
+THe following script tests its consistency.
+
+    text2workspace.py datacard.txt \
+                      -P HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:analiticAnomalousCoupling \
+                      --PO=k_my,r \
+                      -o  model_test.root   
+where:
+
+| option                                        | meaning                                                     |
+| --------------------------------------------- | ----------------------------------------------------------- |
+| ```HiggsAnalysis.AnalyticAnomalousCoupling``` | folder of *SOMETHING*                                       |
+| ```analiticAnomalousCoupling```               | object of *SOMETHING*                                       |
+| ```--PO = k_my,r```                           | define the physics observables to be ```k_my``` and ```r``` |
+| ```-o model_test.root```                      | filename of the workspace created                           |
+
+
+AnomalousCoupling   file.py
+
+oggetto analiticAnomalousCoupling
+
+
+  * ```HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:analiticAnomalousCoupling``` is the folder 
+  *                    file.py            
+  *  object defined in the file.py
 
 ### B) fit
 
 Simulate with k_my set to 1 and r=1
 
-    combine -M MultiDimFit model_test.root  --algo=grid --points 120  -m 125   -t -1 --expectSignal=1     \
-        --redefineSignalPOIs k_my --freezeParameters r --setParameters r=1    --setParameterRanges k_my=-20,20     \
-        --verbose -1
+    combine -M MultiDimFit model_test.root             \
+            --algo=grid --points 120  -m 125           \
+            -t -1 --expectSignal=1                     \
+            --redefineSignalPOIs k_my                  \
+            --freezeParameters r --setParameters r=1   \ 
+            --setParameterRanges k_my=-20,20           \
+            --verbose -1
+
+Where:
+
+| option                                 | meaning                                                            |
+| -------------------------------------- | ------------------------------------------------------------------ |
+| ```-M```                               | *DO SOMETHING*                                                     |
+| ```--algo=grid```                      | choose the algorithm ```grid``` to *DO SOMETHING*                  |
+| ```--points 120```                     | set to 120 the number of points in *DOING SOMETHING*               |
+| ```-m 125```                           | set the Higgs boson mass to 125 GeV *???????*                      |
+| ```-t -1```                            | *DO SOMETHING???*                                                  |
+| ```--expectSignal=1```                 | *DO SOMETHING???*                                                  |
+| ```--redefineSignalPOIs k_my```        | set ```k_my``` as the only physics observable in the fit           |
+| ```--freezeParameters r```             | the parameter ```r``` has a value which will not change in the fit |
+| ```--setParameters r=1```              | the value to which ```r``` is frozen                               |
+| ```--setParameterRanges k_my=-20,20``` | range of variability of the free parameter considered in the fit   |
+| ```--verbose -1```                     | verbosity set to minimum                                           |
+
 
 To simulate "sm" part, k_my == 0 (this is how we simulate the expected result with "sm") :
         
