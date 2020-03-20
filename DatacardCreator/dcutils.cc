@@ -475,19 +475,19 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   output_datacard << "shapes *\t* " + rootfilename + " histo_$PROCESS $PROCESS_$SYSTEMATIC\n" ;
   output_datacard << "shapes data_obs\t* " + rootfilename + " " + "histo_sm" << endl ;
   output_datacard << separator ;
-  output_datacard << "bin\t test\n" ;
+  output_datacard << "bin\t\ttest\n" ;
   output_datacard << "observation\t" << h_SM->Integral () << endl ;
   output_datacard <<separator ;
 
-  output_datacard << "bin\ttest\ttest\ttest\n";
-  output_datacard << "process\tsm\tlinear\tquadratic\n" ;
-  output_datacard << "process\0\t1\t2\n" ;
-  output_datacard << "rate\t" << h_SM->Integral () << "\t" 
+  output_datacard << "bin\t\ttest\ttest\ttest\n";
+  output_datacard << "process\t\tsm\tlinear\tquadratic\n" ;
+  output_datacard << "process\t\t0\t1\t2\n" ;
+  output_datacard << "rate\t\t" << h_SM->Integral () << "\t" 
                   << h_LI->Integral () << "\t"
                   << h_QU->Integral () << "\n" ;
   output_datacard <<separator ;
-  output_datacard <<"lumi\tlnN\t1.02\t1.02\t1.02\n";
-  output_datacard <<"bla\tlnN\t1-\t-\t1.05\n";
+  output_datacard <<"lumi\t\tlnN\t1.02\t1.02\t1.02\n";
+  output_datacard <<"bla\t\tlnN\t-\t-\t1.05\n";
 
   return 0 ;
 }
