@@ -451,7 +451,8 @@ checkEmptyBins (std::map<std::string, TH1F *> & hMap)
 
 pair <string, string>  
 createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
-                string destinationfolder, string prefix, string varname) 
+                string destinationfolder, string prefix, string varname,
+                CfgParser * gConfigParser) 
 {
   // create the root file containing the three histograms
   string rootfilename = destinationfolder + "/" + prefix + "_" + varname + ".root" ;
@@ -460,6 +461,10 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   h_LI->Write ("histo_linear") ;
   h_QU->Write ("histo_quadratic") ;
   outf.Close () ;
+
+  // get the configuration of the combine running
+  string comb_verbosity = gConfigParser->readStringOpt ("combine::verbosity") ;
+  string comb_model     = gConfigParser->readStringOpt ("combine::model") ;
 
   // create the root file containing the three histograms
   string txtfilename = destinationfolder + "/" + prefix + "_" + varname + ".txt" ;
@@ -492,8 +497,8 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
 
   string wscreation_command = "text2workspace.py " ;
   wscreation_command += txtfilename ;
-  wscreation_command += " -P HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:analiticAnomalousCoupling" ;
-  wscreation_command += " --PO=k_my,r" ;
+  wscreation_command += " -P HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:" + comb_model ;
+  wscreation_command += " --PO=k_my_1,r" ;
   wscreation_command += " -o " ;
   replace (rootfilename, ".root", "_WS.root") ;
   wscreation_command += rootfilename ;
@@ -501,10 +506,10 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   string fitting_command = "combine -M MultiDimFit " + rootfilename ;
   fitting_command += " --algo=grid --points 120  -m 125" ;
   fitting_command += " -t -1 --expectSignal=1" ;
-  fitting_command += " --redefineSignalPOIs k_my" ;
+  fitting_command += " --redefineSignalPOIs k_my_1" ;
   fitting_command += " --freezeParameters r --setParameters r=1" ;
-  fitting_command += " --setParameterRanges k_my=-20,20" ;
-  fitting_command += " --verbose -1" ;
+  fitting_command += " --setParameterRanges k_my_1=-20,20" ;
+  fitting_command += " --verbose " + comb_verbosity ;
   replace (rootfilename, "_WS.root", "_fitresult.root") ;
   fitting_command += " ; mv higgsCombineTest.MultiDimFit.mH125.root " + rootfilename  ;
 

@@ -34,7 +34,8 @@ checkEmptyBins (std::map<std::string, TH1F *> & hMap) ;
 
 std::pair <std::string, std::string>
 createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
-                std::string destinationfolder, std::string prefix, std::string varname) ;
+                std::string destinationfolder, std::string prefix, std::string varname,
+                CfgParser * gConfigParser) ;
 
 int 
 plotHistos (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 

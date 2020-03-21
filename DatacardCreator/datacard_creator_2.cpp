@@ -90,7 +90,7 @@ int main (int argc, char ** argv)
       TH1F * h_LI = hmap_LI.at (iHisto->first) ;
       TH1F * h_QU = hmap_QU.at (iHisto->first) ;
       WScreation_commands.push_back (
-          createDataCard (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first)
+          createDataCard (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first, gConfigParser)
         ) ;
       plotHistos     (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first, wilson_coeff, wilson_coeff_plots) ;
       plotHistos     (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first, wilson_coeff, wilson_coeff_plots, true) ;
