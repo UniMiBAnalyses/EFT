@@ -456,10 +456,12 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
 {
   // create the root file containing the three histograms
   string rootfilename = destinationfolder + "/" + prefix + "_" + varname + ".root" ;
+  string wilson_coeff_name = gConfigParser->readStringOpt ("general::wilson_coeff_name") ;
+
   TFile outf (rootfilename.c_str (), "recreate") ;
-  h_SM->Write ("histo_sm") ;
-  h_LI->Write ("histo_linear") ;
-  h_QU->Write ("histo_quadratic") ;
+  h_SM->Write (("histo_sm_" + wilson_coeff_name).c_str ()) ;
+  h_LI->Write (("histo_linear_" + wilson_coeff_name).c_str ()) ;
+  h_QU->Write (("histo_quadratic_" + wilson_coeff_name).c_str ()) ;
   outf.Close () ;
 
   // get the configuration of the combine running
@@ -478,16 +480,20 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   output_datacard << separator ;
 
   output_datacard << "shapes *\t* " + rootfilename + " histo_$PROCESS $PROCESS_$SYSTEMATIC\n" ;
-  output_datacard << "shapes data_obs\t* " + rootfilename + " " + "histo_sm" << endl ;
+  output_datacard << "shapes data_obs\t* " + rootfilename + " " + "histo_sm_" + wilson_coeff_name << endl ;
   output_datacard << separator ;
   output_datacard << "bin\t\ttest\n" ;
   output_datacard << "observation\t" << h_SM->Integral () << endl ;
   output_datacard <<separator ;
 
   output_datacard << "bin\t\ttest\ttest\ttest\n";
-  output_datacard << "process\t\tsm\tlinear\tquadratic\n" ;
+  output_datacard << "process\t"
+                  << "\tsm_" + wilson_coeff_name
+                  << "\tlinear_" + wilson_coeff_name
+                  << "\tquadratic_" + wilson_coeff_name + "\n" ;
   output_datacard << "process\t\t0\t1\t2\n" ;
-  output_datacard << "rate\t\t" << h_SM->Integral () << "\t" 
+  output_datacard << "rate\t\t" 
+                  << h_SM->Integral () << "\t" 
                   << h_LI->Integral () << "\t"
                   << h_QU->Integral () << "\n" ;
   output_datacard <<separator ;
@@ -498,7 +504,7 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   string wscreation_command = "text2workspace.py " ;
   wscreation_command += txtfilename ;
   wscreation_command += " -P HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:" + comb_model ;
-  wscreation_command += " --PO=k_my_1,r" ;
+  wscreation_command += " --PO=k_my_" + wilson_coeff_name + ",r" ;
   wscreation_command += " -o " ;
   replace (rootfilename, ".root", "_WS.root") ;
   wscreation_command += rootfilename ;
@@ -506,9 +512,9 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   string fitting_command = "combine -M MultiDimFit " + rootfilename ;
   fitting_command += " --algo=grid --points 120  -m 125" ;
   fitting_command += " -t -1 --expectSignal=1" ;
-  fitting_command += " --redefineSignalPOIs k_my_1" ;
+  fitting_command += " --redefineSignalPOIs k_my_" + wilson_coeff_name ;
   fitting_command += " --freezeParameters r --setParameters r=1" ;
-  fitting_command += " --setParameterRanges k_my_1=-20,20" ;
+  fitting_command += " --setParameterRanges k_my_" + wilson_coeff_name + " =-20,20" ;
   fitting_command += " --verbose " + comb_verbosity ;
   replace (rootfilename, "_WS.root", "_fitresult.root") ;
   fitting_command += " ; mv higgsCombineTest.MultiDimFit.mH125.root " + rootfilename  ;
