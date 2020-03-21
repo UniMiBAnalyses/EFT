@@ -46,7 +46,7 @@ int main (int argc, char ** argv)
   //FIXME TO BE RATIONALISED
   float wilson_coeff = gConfigParser->readFloatOpt ("general::wilson_coeff_generation_value") ;
   float wilson_coeff_plots = gConfigParser->readFloatOpt ("general::wilson_coeff_plots") ;
-  string EFT_operator = gConfigParser->readStringOpt ("general::operator") ;
+  string wilson_coeff_name = gConfigParser->readStringOpt ("general::wilson_coeff_name") ;
 
   //otherwise if you don't want to use my syntax(which I highly reccomend not to do)
   //string infile = gConfigParser->readStringListOpt ("general::infile") ;
@@ -78,7 +78,7 @@ int main (int argc, char ** argv)
   // creating datacards and rootfile for each variable
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
-  outfilesprefix += ("_" + EFT_operator) ;
+  outfilesprefix += ("_" + wilson_coeff_name) ;
   vector<pair <string, string> > WScreation_commands ;
   //loop on variables   
   for (map<string, TH1F* >::const_iterator iHisto = hmap_SM.begin () ;
