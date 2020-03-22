@@ -449,6 +449,47 @@ checkEmptyBins (std::map<std::string, TH1F *> & hMap)
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 
+// build the list of the operators to be frozen
+pair <string, string>
+prepareFreeze (vector<string> activeCoeff)
+{
+  if (activeCoeff.size () == gAllCoeff.size ()) return pair <string, string> ("", "") ; 
+  string list ;
+  string vals ;
+  for (int iCoeff = 0 ; iCoeff < gAllCoeff.size () ; ++iCoeff)
+    { 
+      if (find (activeCoeff.begin (), activeCoeff.end (), gAllCoeff.at (iCoeff)) 
+          == activeCoeff.end () ) 
+        {
+          list += gAllCoeff.at (iCoeff) + "," ;
+          vals += gAllCoeff.at (iCoeff) + "=0," ;
+        }
+    }
+  // remove the last comma
+  return pair<string, string> (
+     list.substr (0, list.size () - 1),
+     vals.substr (0, vals.size () - 1)
+    ) ; 
+}
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+string
+merge (vector<string> list, const string & joint)
+{
+  string output ;
+  for (int i = 0 ; i < list.size () - 1 ; ++i)
+    output += list.at (i) + joint ;
+  output += list.back () ;
+  return output ;
+}
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
 pair <string, string>  
 createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
                 string destinationfolder, string prefix, string varname,
@@ -456,12 +497,13 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
 {
   // create the root file containing the three histograms
   string rootfilename = destinationfolder + "/" + prefix + "_" + varname + ".root" ;
-  string wilson_coeff_name = gConfigParser->readStringOpt ("general::wilson_coeff_name") ;
+//  string wilson_coeff_list = gConfigParser->readStringOpt ("general::wilson_coeff_names") ;
+  vector<string> wilson_coeff_names = gConfigParser->readStringListOpt ("general::wilson_coeff_names") ;
 
   TFile outf (rootfilename.c_str (), "recreate") ;
-  h_SM->Write (("histo_sm_" + wilson_coeff_name).c_str ()) ;
-  h_LI->Write (("histo_linear_" + wilson_coeff_name).c_str ()) ;
-  h_QU->Write (("histo_quadratic_" + wilson_coeff_name).c_str ()) ;
+  h_SM->Write ("histo_sm") ;
+  h_LI->Write (("histo_linear_" + merge (wilson_coeff_names,"_")).c_str ()) ;
+  h_QU->Write (("histo_quadratic_" + merge (wilson_coeff_names,"_")).c_str ()) ;
   outf.Close () ;
 
   // get the configuration of the combine running
@@ -480,7 +522,7 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   output_datacard << separator ;
 
   output_datacard << "shapes *\t* " + rootfilename + " histo_$PROCESS $PROCESS_$SYSTEMATIC\n" ;
-  output_datacard << "shapes data_obs\t* " + rootfilename + " " + "histo_sm_" + wilson_coeff_name << endl ;
+  output_datacard << "shapes data_obs\t* " + rootfilename + " " + "histo_sm" << endl ;
   output_datacard << separator ;
   output_datacard << "bin\t\ttest\n" ;
   output_datacard << "observation\t" << h_SM->Integral () << endl ;
@@ -488,9 +530,9 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
 
   output_datacard << "bin\t\ttest\ttest\ttest\n";
   output_datacard << "process\t"
-                  << "\tsm_" + wilson_coeff_name
-                  << "\tlinear_" + wilson_coeff_name
-                  << "\tquadratic_" + wilson_coeff_name + "\n" ;
+                  << "\tsm"
+                  << "\tlinear_" + merge (wilson_coeff_names,"_")
+                  << "\tquadratic_" + merge (wilson_coeff_names,"_") + "\n" ;
   output_datacard << "process\t\t0\t1\t2\n" ;
   output_datacard << "rate\t\t" 
                   << h_SM->Integral () << "\t" 
@@ -503,18 +545,21 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
 
   string wscreation_command = "text2workspace.py " ;
   wscreation_command += txtfilename ;
-  wscreation_command += " -P HiggsAnalysis.AnalyticAnomalousCoupling.AnomalousCoupling:" + comb_model ;
-  wscreation_command += " --PO=k_my_" + wilson_coeff_name + ",r" ;
+  wscreation_command += " -P HiggsAnalysis.AnalyticAnomalousCoupling." + comb_model ;
+  wscreation_command += " --PO=k_" + merge (wilson_coeff_names,",k_") + ",r" ;
   wscreation_command += " -o " ;
   replace (rootfilename, ".root", "_WS.root") ;
   wscreation_command += rootfilename ;
 
+  pair <string, string> paramFreeze = prepareFreeze (wilson_coeff_names) ;
+
   string fitting_command = "combine -M MultiDimFit " + rootfilename ;
   fitting_command += " --algo=grid --points 120  -m 125" ;
   fitting_command += " -t -1 --expectSignal=1" ;
-  fitting_command += " --redefineSignalPOIs k_my_" + wilson_coeff_name ;
-  fitting_command += " --freezeParameters r --setParameters r=1" ;
-  fitting_command += " --setParameterRanges k_my_" + wilson_coeff_name + " =-20,20" ;
+  fitting_command += " --redefineSignalPOIs k_" + merge (wilson_coeff_names,",k_") ;
+  fitting_command += " --freezeParameters r," + paramFreeze.first ;
+  fitting_command += " --setParameters r=1," + paramFreeze.second ;
+  fitting_command += " --setParameterRanges k_" + merge (wilson_coeff_names,"=-20,20:k_") + "=-20,20" ;
   fitting_command += " --verbose " + comb_verbosity ;
   replace (rootfilename, "_WS.root", "_fitresult.root") ;
   fitting_command += " ; mv higgsCombineTest.MultiDimFit.mH125.root " + rootfilename  ;

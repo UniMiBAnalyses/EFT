@@ -4,6 +4,10 @@ one should pass the program a config file like file.cfg
 to run: ./datacard_creator_2 file.cfg
 */
 
+// FIXME da generalizzare aggiungendo il loop sui coefficienti di Wilson
+// FIXME e la ricerca dei termini incrociati
+// FIXME per ora dovrebbe girare, se la variabile e' una sola
+
 #include <iomanip>
 #include <vector>
 #include <map>
@@ -44,12 +48,9 @@ int main (int argc, char ** argv)
 
   //wilson_coeff should be a float like 0.3, it will be processed after
   //FIXME TO BE RATIONALISED
-  float wilson_coeff = gConfigParser->readFloatOpt ("general::wilson_coeff_generation_value") ;
+  float wilson_coeff = gConfigParser->readFloatOpt ("general::wilson_coeff_generation_values") ;
   float wilson_coeff_plots = gConfigParser->readFloatOpt ("general::wilson_coeff_plots") ;
-  string wilson_coeff_name = gConfigParser->readStringOpt ("general::wilson_coeff_name") ;
-
-  //otherwise if you don't want to use my syntax(which I highly reccomend not to do)
-  //string infile = gConfigParser->readStringListOpt ("general::infile") ;
+  string wilson_coeff_name = gConfigParser->readStringOpt ("general::wilson_coeff_names") ;
 
   // reading input and output files information
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
