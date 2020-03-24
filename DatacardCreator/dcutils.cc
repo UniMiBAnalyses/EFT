@@ -293,7 +293,7 @@ readNtupleFile (string rootFileName, string ntupleName,
   vector<string> uppercutslist = gConfigParser->readListOfOpts ("uppercuts") ;
   for (int iCut = 0 ; iCut < uppercutslist.size () ; ++iCut)
     {
-      uppercuts[uppercutslist[iCut]] = gConfigParser->readFloatOpt ("cuts::" + uppercutslist[iCut]) ;
+      uppercuts[uppercutslist[iCut]] = gConfigParser->readFloatOpt ("uppercuts::" + uppercutslist[iCut]) ;
     } 
 
   // open the input file and extract general info concerning the sample 
