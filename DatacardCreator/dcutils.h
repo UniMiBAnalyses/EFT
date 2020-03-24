@@ -108,6 +108,8 @@ const std::map<std::string, std::string> gvarNames
     std::pair<std::string, std::string> ("ptll"      , "p_{T}^{#ell#ell}" ),
     std::pair<std::string, std::string> ("ptj1"      , "p_{T}^{j_{1}}"      ),
     std::pair<std::string, std::string> ("ptj2"      , "p_{T}^{j_{2}}"      ),
+    std::pair<std::string, std::string> ("etaj1"     , "#eta_{j_{1}}"      ),
+    std::pair<std::string, std::string> ("etaj2"     , "#eta_{j_{2}}"      ),
     std::pair<std::string, std::string> ("deltaetajj", "#Delta#eta_{jj}"),
     std::pair<std::string, std::string> ("deltaphijj", "#Delta#phi_{jj}"),
     std::pair<std::string, std::string> ("noshape"   , "XS"             )
