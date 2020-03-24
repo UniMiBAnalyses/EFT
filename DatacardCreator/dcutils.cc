@@ -15,6 +15,7 @@
 #include "THStack.h"
 #include "TLegend.h"
 #include "TString.h"
+#include "TMath.h"
 
 using namespace std ;
 
@@ -159,6 +160,8 @@ void setTDRStyle ()
   // tdrStyle->SetHistMinimumZero(kTRUE);
 
   tdrStyle->cd();
+
+  return ;
 }
 
 
@@ -454,15 +457,15 @@ pair <string, string>
 prepareFreeze (vector<string> activeCoeff)
 {
   if (activeCoeff.size () == gAllCoeff.size ()) return pair <string, string> ("", "") ; 
-  string list ;
-  string vals ;
+  string list = "k_" ;
+  string vals = "k_" ;
   for (int iCoeff = 0 ; iCoeff < gAllCoeff.size () ; ++iCoeff)
     { 
       if (find (activeCoeff.begin (), activeCoeff.end (), gAllCoeff.at (iCoeff)) 
           == activeCoeff.end () ) 
         {
-          list += gAllCoeff.at (iCoeff) + "," ;
-          vals += gAllCoeff.at (iCoeff) + "=0," ;
+          list += gAllCoeff.at (iCoeff) + ",k_" ;
+          vals += gAllCoeff.at (iCoeff) + "=0,k_" ;
         }
     }
   // remove the last comma
@@ -543,10 +546,11 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   output_datacard <<"bla\t\tlnN\t-\t-\t1.05\n";
   output_datacard.close () ;
 
+  //PG apparently this may work with the EFT model only
   string wscreation_command = "text2workspace.py " ;
   wscreation_command += txtfilename ;
   wscreation_command += " -P HiggsAnalysis.AnalyticAnomalousCoupling." + comb_model ;
-  wscreation_command += " --PO=k_" + merge (wilson_coeff_names,",k_") + ",r" ;
+//  wscreation_command += " --PO=k_" + merge (wilson_coeff_names,",k_") + ",r" ;
   wscreation_command += " -o " ;
   replace (rootfilename, ".root", "_WS.root") ;
   wscreation_command += rootfilename ;
@@ -554,12 +558,12 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   pair <string, string> paramFreeze = prepareFreeze (wilson_coeff_names) ;
 
   string fitting_command = "combine -M MultiDimFit " + rootfilename ;
-  fitting_command += " --algo=grid --points 120  -m 125" ;
-  fitting_command += " -t -1 --expectSignal=1" ;
+  fitting_command += " --algo=grid --points " + to_string (wilson_coeff_names.size () * 1200) + " -m 125" ;
+  fitting_command += " -t -1 --expectSignal=1" ;  // FIXME check whehter expectSignal is needed
   fitting_command += " --redefineSignalPOIs k_" + merge (wilson_coeff_names,",k_") ;
   fitting_command += " --freezeParameters r," + paramFreeze.first ;
-  fitting_command += " --setParameters r=1," + paramFreeze.second ;
-  fitting_command += " --setParameterRanges k_" + merge (wilson_coeff_names,"=-20,20:k_") + "=-20,20" ;
+  fitting_command += " --setParameters r=1," ; // + paramFreeze.second ;
+  fitting_command += " --setParameterRanges k_" + merge (wilson_coeff_names,"=-2,2:k_") + "=-2,2" ;
   fitting_command += " --verbose " + comb_verbosity ;
   replace (rootfilename, "_WS.root", "_fitresult.root") ;
   fitting_command += " ; mv higgsCombineTest.MultiDimFit.mH125.root " + rootfilename  ;
@@ -618,5 +622,203 @@ plotHistos (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
 
   return 0 ;
 }
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+// set the likelihood scan aestetics
+void setLSaspect (TGraph * graphScan, string variable)
+{
+
+  graphScan->SetTitle ("") ;
+  graphScan->SetMarkerStyle (21) ;
+  graphScan->SetLineWidth (2);
+  graphScan->SetMarkerColor (kRed) ;
+  graphScan->SetLineColor (kRed) ;
+
+  graphScan->GetXaxis()->SetTitle (variable.c_str ()) ;
+  graphScan->GetYaxis()->SetTitle ("-2 #Delta LL") ;
+
+  return ;
+}
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+pair<float, float>
+getXrange (TGraph * graphScan)
+{
+  // FIXME implement more sophisticated version that performs  horizontal zoom
+  // FIXME such that on the vertical axis one arrives at a certain max DLL value
+  return pair<float, float> 
+    (
+      graphScan->GetXaxis ()->GetXmin (),
+      graphScan->GetXaxis ()->GetXmax ()
+    ) ;
+}
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+float 
+getLSminimum (TGraph * graphScan)
+{
+  int n = graphScan->GetN () ;
+  double * y = graphScan->GetY () ;
+  int locmin = TMath::LocMin (n,y) ;
+  return y[locmin] ;
+} 
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+vector <float>
+getRawIntersections (TGraph * graphScan, float val, float resol)
+{
+  vector <float> xings ;
+  int n = graphScan->GetN () ;
+  double * x = graphScan->GetX () ;
+  double * y = graphScan->GetY () ;
+  bool found = false ;
+  pair<float, float> around ;
+  // loop over tgraph points
+  for (int i = 0 ; i < n ; ++i)
+    {
+      if (fabs (y[i] - val) < resol)
+        {
+          if (!found) 
+            {
+              found = true ;
+              around.first = x[i] ;
+              around.second = x[i] ;
+            }
+          else  
+            {
+              around.second = x[i] ;
+            }
+        }
+      else 
+        {
+          if (found) 
+            {
+              xings.push_back (0.5 * (around.second + around.first)) ;
+              found = false ;
+            }
+        }
+    }  // loop over tgraph points
+  return xings ;
+}
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+vector <float>
+getLSintersections (TGraph * graphScan, float val, float resol)
+{
+  vector <float> xings ;
+  while (xings.size () < 2)
+    { 
+      xings = getRawIntersections (graphScan, val, resol) ;
+      resol *= 3 ;
+    }
+  return xings ;
+}  
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+bool sortBySensitivity (const pair<string, vector<float> > & a ,
+                        const pair<string, vector<float> > & b)
+{
+  return (  (0.5 * (a.second[0] - a.second[1]))
+          < (0.5 * (b.second[0] - b.second[1])) ) ;
+}
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+TH1F * setDummyHisto (float xmin, float ymin, float xmax, float ymax, 
+                      vector<string> labels)
+{
+  TH1F * dh = new TH1F ("dh", "", xmax - xmin, xmin, xmax) ;
+  dh->Fill (xmin + 0.1 * (xmax - xmin), ymin) ;
+  dh->Fill (xmin + 0.9 * (xmax - xmin), ymax) ;
+  dh->SetFillColor (0) ;
+  dh->SetLineColor (10) ;
+  for (int i = 1 ; i <= labels.size () ; ++i) 
+    dh->GetXaxis ()->SetBinLabel (i, labels[i-1].c_str ()) ;
+  return dh ;
+}
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+void 
+drawSensitivities (string op, 
+                   vector <pair<string, vector<float> > > limits, 
+                   string basefilename)
+{
+  string hname = "h_" + op + "_OSUP" ; 
+  TH1F h_OSUP (hname.c_str (), "", limits.size (), 0, limits.size ()) ;
+  hname = "h_" + op + "_SSDO" ; 
+  TH1F h_OSDO (hname.c_str (), "", limits.size (), 0, limits.size ()) ;
+  hname = "h_" + op + "_TSUP" ; 
+  TH1F h_TSUP (hname.c_str (), "", limits.size (), 0, limits.size ()) ;
+  hname = "h_" + op + "_TSDO" ; 
+  TH1F h_TSDO (hname.c_str (), "", limits.size (), 0, limits.size ()) ;
+
+  float min = +10. ;
+  float max = -10. ;
+  vector<string> labels ;
+  for (int i = 0 ; i < limits.size () ; ++i)
+    {
+      h_OSDO.Fill (i+0.5, limits.at (i).second.at (0)) ;
+      h_OSUP.Fill (i+0.5, limits.at (i).second.at (1)) ;
+      h_TSDO.Fill (i+0.5, limits.at (i).second.at (2)) ;
+      h_TSUP.Fill (i+0.5, limits.at (i).second.at (3)) ;
+
+      if (limits.at (i).second.at (2) < min) min = limits.at (i).second.at (2) ;
+      if (limits.at (i).second.at (3) > max) max = limits.at (i).second.at (3) ;
+
+      labels.push_back (limits.at (i).first) ;
+    }
+
+  TCanvas clims ("clims", "", 600, 600) ;
+  TH1F * dh = setDummyHisto (0, min * 1.1, limits.size (), max * 1.1, labels) ;
+  dh->GetYaxis ()->SetTitle ((op + " sensitivity").c_str ()) ;
+  dh->Draw ("hist") ;
+
+  h_OSDO.SetFillColor (kRed-7) ;
+  h_OSUP.SetFillColor (kRed-7) ;
+  h_TSDO.SetFillColor (kBlue-6) ;
+  h_TSUP.SetFillColor (kBlue-6) ;
+
+  h_TSDO.Draw ("hist same") ;
+  h_TSUP.Draw ("hist same") ;
+  h_OSDO.Draw ("hist same") ;
+  h_OSUP.Draw ("hist same") ;
+
+  TLegend legend (0.70, 0.80, 0.90, 0.90) ;
+  legend.AddEntry (&h_OSDO, "one sigma bound", "f") ;
+  legend.AddEntry (&h_TSDO, "two sigma bound", "f") ;
+  legend.SetBorderSize (0) ;
+  legend.SetFillStyle (0) ;
+  legend.Draw () ;
+
+  clims.RedrawAxis () ;
+  clims.SaveAs ((basefilename + "_cfr.png").c_str ()) ;
+
+  return ;
+}
+
+
 
 
