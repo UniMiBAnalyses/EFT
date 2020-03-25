@@ -5,9 +5,9 @@
 #include <map>
 #include <iostream>
 #include <algorithm>
+#include <fstream>
 
-#include <TTreeReader.h>
-
+#include "TTreeReader.h"
 #include "TFile.h"
 #include "TH1F.h"
 #include "TStyle.h"
@@ -766,6 +766,12 @@ drawSensitivities (string op,
                    vector <pair<string, vector<float> > > limits, 
                    string basefilename)
 {
+
+  // prepare the sensitivity bars,
+  // separated for positive and negative intersections
+  // of the likelihood profile with the horizonal lines
+  // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
+
   string hname = "h_" + op + "_OSUP" ; 
   TH1F h_OSUP (hname.c_str (), "", limits.size (), 0, limits.size ()) ;
   hname = "h_" + op + "_SSDO" ; 
@@ -791,15 +797,18 @@ drawSensitivities (string op,
       labels.push_back (limits.at (i).first) ;
     }
 
+  // draw the sensitivity bars in a single canvas
+  // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
+
   TCanvas clims ("clims", "", 600, 600) ;
   TH1F * dh = setDummyHisto (0, min * 1.1, limits.size (), max * 1.1, labels) ;
   dh->GetYaxis ()->SetTitle ((op + " sensitivity").c_str ()) ;
   dh->Draw ("hist") ;
 
-  h_OSDO.SetFillColor (kRed-7) ;
-  h_OSUP.SetFillColor (kRed-7) ;
-  h_TSDO.SetFillColor (kBlue-6) ;
-  h_TSUP.SetFillColor (kBlue-6) ;
+  h_OSDO.SetFillColor (kOrange+1) ;
+  h_OSUP.SetFillColor (kOrange+1) ;
+  h_TSDO.SetFillColor (kCyan-3) ;
+  h_TSUP.SetFillColor (kCyan-3) ;
 
   h_TSDO.Draw ("hist same") ;
   h_TSUP.Draw ("hist same") ;
@@ -816,6 +825,33 @@ drawSensitivities (string op,
   clims.RedrawAxis () ;
   clims.SaveAs ((basefilename + "_cfr.png").c_str ()) ;
 
+  // save histos in a root file
+  // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
+
+  TFile outrootfile ((basefilename + "_cfr.root").c_str (), "recreate") ;
+  h_TSDO.Write () ;
+  h_TSUP.Write () ;
+  h_OSDO.Write () ;
+  h_OSUP.Write () ;
+  outrootfile.Write () ;
+
+  // save numbers in a txt file
+  // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
+
+  ofstream myfile;
+  myfile.open ((basefilename + "_cfr.txt").c_str ()) ;
+  myfile << "#var  1sigmaLow 1sigmaHigh 2sigmaLow 2sigmaHigh\n" ;
+  for (int i = 0 ; i < limits.size () ; ++i)
+    {
+      myfile << limits.at (i).first
+             << "\t" << limits.at (i).second.at (0)
+             << "\t" << limits.at (i).second.at (1)
+             << "\t" << limits.at (i).second.at (2)
+             << "\t" << limits.at (i).second.at (3)
+             << "\n" ;
+    }
+  myfile.close () ;
+ 
   return ;
 }
 

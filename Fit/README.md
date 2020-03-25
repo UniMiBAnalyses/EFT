@@ -77,10 +77,14 @@ where:
 | ```--PO = k_my_1,r```                           | define the physics observables to be ```k_my_1``` and ```r```                |
 | ```-o model_test.root```                      | filename of the workspace created                                          |
 
-The module ```HiggsAnalysis.AnalyticAnomalousCoupling``` is actually implemented in 
-```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCoupling.py```,
-```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCouplingTwoOp.py``` and
-```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCouplingOneOp.py```.
+The module ```HiggsAnalysis.AnalyticAnomalousCoupling``` is actually implemented in "
+  * ```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCoupling.py```: old version
+  * ```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCouplingTwoOp.py```:
+    version with one single Wilson coefficient free to float 
+  * ```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCouplingOneOp.py```:
+    version with two Wilson coefficients free to float
+  * ```HiggsAnalysis/AnalyticAnomalousCoupling/python/AnomalousCouplingEFT.py```:
+    version with all SMEFTSim Wilson coefficients free to float.
 **NB** the root file is searched for in the subfolder indicated in the txt file, 
        by the ```text2workspace.py``` script.
 The workspace created can be printed for inspection:
@@ -88,9 +92,10 @@ The workspace created can be printed for inspection:
     root -b model_test.root
     w->Print ()
 
-When using datacard_creator_2, a shell script is also created,
-that contains the commands to be issued to actually create the workspaces, 
-and one to have Combine perform the fits.
+When using datacard_creator_2, two shell script are also created,
+that contain the commands to be issued to actually create the workspaces, 
+and that run Combine to perform the fits.
+Those scripts use the ```AnomalousCouplingEFT``` of the EFT model.
 
 ### B) fit
 
