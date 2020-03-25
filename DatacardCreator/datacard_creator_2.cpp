@@ -97,7 +97,6 @@ int main (int argc, char ** argv)
       // creating datacards and rootfile for each variable
       // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
-      outfiles_prefix += ("_" + wilson_coeff_names.at (iCoeff)) ;
       vector<pair <string, string> > WScreation_commands ;
       // FIXME creare se non esiste, pulire se esiste
       string destination_folder = destination_folder_prefix + "_" + wilson_coeff_names.at (iCoeff) ;
@@ -116,13 +115,13 @@ int main (int argc, char ** argv)
           TH1F * h_LI = hmap_LI.at (iHisto->first) ;
           TH1F * h_QU = hmap_QU.at (iHisto->first) ;
           WScreation_commands.push_back (
-              createDataCard (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix, 
+              createDataCard (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
                               iHisto->first, wilson_coeff_names.at (iCoeff),
                               gConfigParser)
             ) ;
-          plotHistos (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix, 
+          plotHistos (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
                       iHisto->first, wilson_coeffs.at (iCoeff), wilson_coeffs_plot.at (iCoeff)) ;
-          plotHistos (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix, 
+          plotHistos (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
                       iHisto->first, wilson_coeffs.at (iCoeff), wilson_coeffs_plot.at (iCoeff), true) ;
     
         } //loop on variables  
