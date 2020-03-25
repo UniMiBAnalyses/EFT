@@ -148,6 +148,7 @@ merge (std::vector<std::string> list, const std::string & joint) ;
 std::pair <std::string, std::string>
 createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
                 std::string destinationfolder, std::string prefix, std::string varname,
+                std::string wilson_coeff_name, 
                 CfgParser * gConfigParser) ;
 
 int 

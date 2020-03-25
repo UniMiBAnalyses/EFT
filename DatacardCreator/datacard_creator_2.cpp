@@ -19,6 +19,7 @@ to run: ./datacard_creator_2 file.cfg
 #include <cassert>
 #include <fstream>
 #include <algorithm>
+#include <sys/stat.h>
 
 #include <TFile.h>
 #include <TNtuple.h>
@@ -46,76 +47,110 @@ int main (int argc, char ** argv)
   // reading generic parameters of the generation
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
-  //wilson_coeff should be a float like 0.3, it will be processed after
-  //FIXME TO BE RATIONALISED
-  float wilson_coeff = gConfigParser->readFloatOpt ("general::wilson_coeff_generation_values") ;
-  float wilson_coeff_plots = gConfigParser->readFloatOpt ("general::wilson_coeff_plots") ;
-  string wilson_coeff_name = gConfigParser->readStringOpt ("general::wilson_coeff_names") ;
+  vector<string> wilson_coeff_names = gConfigParser->readStringListOpt ("general::wilson_coeff_names") ;
+  vector<float> wilson_coeffs_plot  = gConfigParser->readFloatListOpt ("general::wilson_coeffs_plot") ;
+  vector<float> wilson_coeffs       = gConfigParser->readFloatListOpt ("general::wilson_coeffs_gen") ;
 
   // reading input and output files information
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
-  //name of ntuples in this order: sm, linear(interference), quadratic(BSM)
-  //also the evtNum_nisto_names should be in the format name_ntuple_nums(which also Vittorio used)
-  vector<string> input_files = gConfigParser->readStringListOpt ("general::input_files") ;
-  vector<string> name_ntuples = gConfigParser->readStringListOpt ("general::name_ntuples") ;
+  string input_files_folder   = gConfigParser->readStringOpt ("input::files_folder") ;
+  string input_files_prefix   = gConfigParser->readStringOpt ("input::files_prefix") ;
+  string input_ntuples_prefix = gConfigParser->readStringOpt ("input::ntuples_prefix") ;
 
-  string outfilesprefix = gConfigParser->readStringOpt ("general::outfilesprefix") ;
-  string destinationfolder = gConfigParser->readStringOpt ("general::destinationfolder") ;
+  string outfiles_prefix           = gConfigParser->readStringOpt ("output::outfiles_prefix") ;
+  string destination_folder_prefix = gConfigParser->readStringOpt ("output::destination_folder_prefix") ;
 
-  // reading the physics from the input files
-  // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
+  map<string, TH1F *> hmap_SM = readNtupleFile (
+      input_files_folder + "/" + input_files_prefix + "_SM.root", 
+      input_ntuples_prefix + "_SM", 
+      "SM_", "sm", gConfigParser
+    ) ;
 
-  //this is for output names only
-  string histo_names[] = {"histo_sm", "histo_linear", "histo_quadratic"};
-  string dist_names[] = {"sm","linear","quadratic"};
-
-  std::map<std::string, TH1F *> hmap_SM = readNtupleFile (input_files[0], name_ntuples[0], "SM_", "sm",        gConfigParser) ;
-  std::map<std::string, TH1F *> hmap_LI = readNtupleFile (input_files[1], name_ntuples[1], "LI_", "linear",    gConfigParser) ;
-  scaleAllHistos (hmap_LI, 1./wilson_coeff) ;
-  std::map<std::string, TH1F *> hmap_QU = readNtupleFile (input_files[2], name_ntuples[2], "QU_", "quadratic", gConfigParser) ;
-  scaleAllHistos (hmap_QU, 1./(wilson_coeff * wilson_coeff)) ;
-
-  // creating datacards and rootfile for each variable
-  // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
-
-  outfilesprefix += ("_" + wilson_coeff_name) ;
-  vector<pair <string, string> > WScreation_commands ;
-  //loop on variables   
-  for (map<string, TH1F* >::const_iterator iHisto = hmap_SM.begin () ;
-       iHisto != hmap_SM.end () ;
-       ++iHisto)
+  // loop over Wilson coefficients
+  for (int iCoeff = 0 ; iCoeff < wilson_coeff_names.size () ; ++iCoeff)
     {
-      // get the three histograms 
-      TH1F * h_SM = iHisto->second ;
-      TH1F * h_LI = hmap_LI.at (iHisto->first) ;
-      TH1F * h_QU = hmap_QU.at (iHisto->first) ;
-      WScreation_commands.push_back (
-          createDataCard (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first, gConfigParser)
-        ) ;
-      plotHistos     (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first, wilson_coeff, wilson_coeff_plots) ;
-      plotHistos     (h_SM, h_LI, h_QU, destinationfolder, outfilesprefix, iHisto->first, wilson_coeff, wilson_coeff_plots, true) ;
+      cout << "--> coeff " << wilson_coeff_names.at (iCoeff) << endl ;
+      cout << "---- ---- ---- ---- ---- ---- ---- ---- ---- " << endl ;
 
-    } 
+      vector<string> input_files ;
+      input_files.push_back (input_files_folder + "/" + input_files_prefix + "_" + wilson_coeff_names.at (iCoeff) + "_LI.root") ;
+      input_files.push_back (input_files_folder + "/" + input_files_prefix + "_" + wilson_coeff_names.at (iCoeff) + "_QU.root") ;
 
-  ofstream WScreation_script (destinationfolder + "/launchWScreation.sh") ;
-  WScreation_script << "#!/usr/bin/bash\n" ;
-  WScreation_script << "\n" ;
-  for (int i = 0 ; i < WScreation_commands.size () ; ++i)
-       WScreation_script << WScreation_commands.at (i).first << "\n" ;
-  WScreation_script.close () ;
+      //name of ntuples in this order: sm, linear(interference), quadratic(BSM)
+      vector<string> ntuple_names ;
+      ntuple_names.push_back (input_ntuples_prefix + "_" + wilson_coeff_names.at (iCoeff) + "_LI") ;
+      ntuple_names.push_back (input_ntuples_prefix + "_" + wilson_coeff_names.at (iCoeff) + "_QU") ;
 
-  ofstream fitting_script (destinationfolder + "/launchFitting.sh") ;
-  fitting_script << "#!/usr/bin/bash\n" ;
-  fitting_script << "\n" ;
-  for (int i = 0 ; i < WScreation_commands.size () ; ++i)
-       fitting_script << WScreation_commands.at (i).second << "\n" ;
-  fitting_script.close () ;
+      // reading the physics from the input files
+      // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
-  cout << "Datacards and plots created.\n" ;
-  cout << "To convert datacards in workspaces, run (from the same folder where datacard_creator_2 was executed): \n";
-  cout << "source " << destinationfolder << "/launchWScreation.sh\n" ;
-  cout << "To launch the fitting process, run (from the same folder where datacard_creator_2 was executed): \n";
-  cout << "source " << destinationfolder << "/launchFitting.sh\n" ;
+      // //this is for output names only
+      // string histo_names[] = {"histo_sm", "histo_linear", "histo_quadratic"};
+      // string dist_names[] = {"sm","linear","quadratic"};
+    
+      map<string, TH1F *> hmap_LI = readNtupleFile (input_files[0], ntuple_names[0], wilson_coeff_names.at (iCoeff) + "_LI_", "linear",    gConfigParser) ;
+      scaleAllHistos (hmap_LI, 1./wilson_coeffs.at (iCoeff)) ;
+      map<string, TH1F *> hmap_QU = readNtupleFile (input_files[1], ntuple_names[1], wilson_coeff_names.at (iCoeff) + "_QU_", "quadratic", gConfigParser) ;
+      scaleAllHistos (hmap_QU, 1./(wilson_coeffs.at (iCoeff) * wilson_coeffs.at (iCoeff))) ;
+
+      // creating datacards and rootfile for each variable
+      // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
+
+      outfiles_prefix += ("_" + wilson_coeff_names.at (iCoeff)) ;
+      vector<pair <string, string> > WScreation_commands ;
+      // FIXME creare se non esiste, pulire se esiste
+      string destination_folder = destination_folder_prefix + "_" + wilson_coeff_names.at (iCoeff) ;
+      mkdir (destination_folder.c_str (), S_IRWXU) ;
+      // https://pubs.opengroup.org/onlinepubs/009695399/functions/mkdir.html
+      // expected error if exists: EEXIST          17      /* File exists */
+      // permission options listed here https://pubs.opengroup.org/onlinepubs/007908775/xsh/sysstat.h.html
+
+      //loop on variables  
+      for (map<string, TH1F* >::const_iterator iHisto = hmap_SM.begin () ;
+           iHisto != hmap_SM.end () ;
+           ++iHisto)
+        {
+          // get the three histograms 
+          TH1F * h_SM = iHisto->second ;
+          TH1F * h_LI = hmap_LI.at (iHisto->first) ;
+          TH1F * h_QU = hmap_QU.at (iHisto->first) ;
+          WScreation_commands.push_back (
+              createDataCard (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix, 
+                              iHisto->first, wilson_coeff_names.at (iCoeff),
+                              gConfigParser)
+            ) ;
+          plotHistos (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix, 
+                      iHisto->first, wilson_coeffs.at (iCoeff), wilson_coeffs_plot.at (iCoeff)) ;
+          plotHistos (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix, 
+                      iHisto->first, wilson_coeffs.at (iCoeff), wilson_coeffs_plot.at (iCoeff), true) ;
+    
+        } //loop on variables  
+
+      // creating the scripts to be launched to use combine
+      // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
+      
+      ofstream WScreation_script (destination_folder + "/launchWScreation.sh") ;
+      WScreation_script << "#!/usr/bin/bash\n" ;
+      WScreation_script << "\n" ;
+      for (int i = 0 ; i < WScreation_commands.size () ; ++i)
+           WScreation_script << WScreation_commands.at (i).first << "\n" ;
+      WScreation_script.close () ;
+    
+      ofstream fitting_script (destination_folder + "/launchFitting.sh") ;
+      fitting_script << "#!/usr/bin/bash\n" ;
+      fitting_script << "\n" ;
+      for (int i = 0 ; i < WScreation_commands.size () ; ++i)
+           fitting_script << WScreation_commands.at (i).second << "\n" ;
+      fitting_script.close () ;
+    
+      cout << "Datacards and plots created.\n" ;
+      cout << "To convert datacards in workspaces, run (from the same folder where datacard_creator_2 was executed): \n";
+      cout << "source " << destination_folder << "/launchWScreation.sh\n" ;
+      cout << "To launch the fitting process, run (from the same folder where datacard_creator_2 was executed): \n";
+      cout << "source " << destination_folder << "/launchFitting.sh\n" ;
+
+    } // loop over Wilson coefficients
+
   return 0 ;
 }

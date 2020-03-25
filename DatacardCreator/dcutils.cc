@@ -496,22 +496,23 @@ merge (vector<string> list, const string & joint)
 pair <string, string>  
 createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
                 string destinationfolder, string prefix, string varname,
-                CfgParser * gConfigParser) 
+                string wilson_coeff_name, 
+                CfgParser * gConfigParser)
 {
   // create the root file containing the three histograms
   string rootfilename = destinationfolder + "/" + prefix + "_" + varname + ".root" ;
+  // get the configuration of the combine running
+  string comb_verbosity = gConfigParser->readStringOpt ("combine::verbosity") ;
+  string comb_model     = gConfigParser->readStringOpt ("combine::model") ;
+
 //  string wilson_coeff_list = gConfigParser->readStringOpt ("general::wilson_coeff_names") ;
   vector<string> wilson_coeff_names = gConfigParser->readStringListOpt ("general::wilson_coeff_names") ;
 
   TFile outf (rootfilename.c_str (), "recreate") ;
   h_SM->Write ("histo_sm") ;
-  h_LI->Write (("histo_linear_" + merge (wilson_coeff_names,"_")).c_str ()) ;
-  h_QU->Write (("histo_quadratic_" + merge (wilson_coeff_names,"_")).c_str ()) ;
+  h_LI->Write (("histo_linear_" + wilson_coeff_name).c_str ()) ;
+  h_QU->Write (("histo_quadratic_" + wilson_coeff_name).c_str ()) ;
   outf.Close () ;
-
-  // get the configuration of the combine running
-  string comb_verbosity = gConfigParser->readStringOpt ("combine::verbosity") ;
-  string comb_model     = gConfigParser->readStringOpt ("combine::model") ;
 
   // create the root file containing the three histograms
   string txtfilename = destinationfolder + "/" + prefix + "_" + varname + ".txt" ;
@@ -534,8 +535,8 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   output_datacard << "bin\t\ttest\ttest\ttest\n";
   output_datacard << "process\t"
                   << "\tsm"
-                  << "\tlinear_" + merge (wilson_coeff_names,"_")
-                  << "\tquadratic_" + merge (wilson_coeff_names,"_") + "\n" ;
+                  << "\tlinear_" + wilson_coeff_name
+                  << "\tquadratic_" + wilson_coeff_name + "\n" ;
   output_datacard << "process\t\t0\t1\t2\n" ;
   output_datacard << "rate\t\t" 
                   << h_SM->Integral () << "\t" 
@@ -555,15 +556,17 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   replace (rootfilename, ".root", "_WS.root") ;
   wscreation_command += rootfilename ;
 
-  pair <string, string> paramFreeze = prepareFreeze (wilson_coeff_names) ;
+  vector<string> activeCoeff ; 
+  activeCoeff.push_back (wilson_coeff_name) ;
+  pair <string, string> paramFreeze = prepareFreeze (activeCoeff) ;
 
   string fitting_command = "combine -M MultiDimFit " + rootfilename ;
-  fitting_command += " --algo=grid --points " + to_string (wilson_coeff_names.size () * 1200) + " -m 125" ;
+  fitting_command += " --algo=grid --points 1200 -m 125" ;
   fitting_command += " -t -1 --expectSignal=1" ;  // FIXME check whehter expectSignal is needed
-  fitting_command += " --redefineSignalPOIs k_" + merge (wilson_coeff_names,",k_") ;
+  fitting_command += " --redefineSignalPOIs k_" + wilson_coeff_name ;
   fitting_command += " --freezeParameters r," + paramFreeze.first ;
   fitting_command += " --setParameters r=1," ; // + paramFreeze.second ;
-  fitting_command += " --setParameterRanges k_" + merge (wilson_coeff_names,"=-2,2:k_") + "=-2,2" ;
+  fitting_command += " --setParameterRanges k_" + wilson_coeff_name + "=-2,2" ;
   fitting_command += " --verbose " + comb_verbosity ;
   replace (rootfilename, "_WS.root", "_fitresult.root") ;
   fitting_command += " ; mv higgsCombineTest.MultiDimFit.mH125.root " + rootfilename  ;
