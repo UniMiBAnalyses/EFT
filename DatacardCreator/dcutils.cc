@@ -555,6 +555,7 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   wscreation_command += " -o " ;
   replace (rootfilename, ".root", "_WS.root") ;
   wscreation_command += rootfilename ;
+  wscreation_command += " > " + destinationfolder + "/WScreation_" + varname + ".log 2>&1" ; 
 
   vector<string> activeCoeff ; 
   activeCoeff.push_back (wilson_coeff_name) ;
@@ -571,6 +572,7 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   fitting_command += " --robustFit=1" ;
   fitting_command += " --X-rtd FITTER_NEW_CROSSING_ALGO" ;
   fitting_command += " --X-rtd FITTER_NEVER_GIVE_UP" ;
+  fitting_command += " > " + destinationfolder + "/fitting_" + varname + ".log 2>&1" ; 
   replace (rootfilename, "_WS.root", "_fitresult.root") ;
   fitting_command += " ; mv higgsCombineTest.MultiDimFit.mH125.root " + rootfilename  ;
 
@@ -594,8 +596,8 @@ createCondorScripts (pair <std::string, string> fittingCommands,
   jobfile << "cd " << cmssw_folder << "\n" ;
   jobfile << "eval `scram run -sh`\n" ;
   jobfile << "cd " << execution_folder << "\n" ;
-  jobfile << fittingCommands.first  << " > " << output_folder << "/WScreation_" << varname <<" .log 2>&1 \n" ;
-  jobfile << fittingCommands.second << " > " << output_folder << "/fitting_"    << varname << ".log 2>&1 \n" ;
+  jobfile << fittingCommands.first  << "\n" ;
+  jobfile << fittingCommands.second << "\n" ;
 
   jobfile.close () ;
 }
