@@ -1,5 +1,7 @@
-// c++ -o datacard_creator_2 `root-config --glibs --cflags` CfgParser.cc dcutils.cc -lm datacard_creator_2.cpp
 /*
+c++ -o datacard_creator_2 `root-config --glibs --cflags` CfgParser.cc dcutils.cc -lm datacard_creator_2.cpp
+
+
 one should pass the program a config file like file.cfg
 to run: ./datacard_creator_2 file.cfg
 */
@@ -61,6 +63,8 @@ int main (int argc, char ** argv)
   string outfiles_prefix           = gConfigParser->readStringOpt ("output::outfiles_prefix") ;
   string destination_folder_prefix = gConfigParser->readStringOpt ("output::destination_folder_prefix") ;
 
+  string cmssw_folder = gConfigParser->readStringOpt ("combine::cmssw_folder") ;
+
   map<string, TH1F *> hmap_SM = readNtupleFile (
       input_files_folder + "/" + input_files_prefix + "_SM.root", 
       input_ntuples_prefix + "_SM", 
@@ -85,10 +89,6 @@ int main (int argc, char ** argv)
       // reading the physics from the input files
       // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
-      // //this is for output names only
-      // string histo_names[] = {"histo_sm", "histo_linear", "histo_quadratic"};
-      // string dist_names[] = {"sm","linear","quadratic"};
-    
       map<string, TH1F *> hmap_LI = readNtupleFile (input_files[0], ntuple_names[0], wilson_coeff_names.at (iCoeff) + "_LI_", "linear",    gConfigParser) ;
       scaleAllHistos (hmap_LI, 1./wilson_coeffs.at (iCoeff)) ;
       map<string, TH1F *> hmap_QU = readNtupleFile (input_files[1], ntuple_names[1], wilson_coeff_names.at (iCoeff) + "_QU_", "quadratic", gConfigParser) ;
@@ -124,6 +124,14 @@ int main (int argc, char ** argv)
           plotHistos (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
                       iHisto->first, wilson_coeffs.at (iCoeff), wilson_coeffs_plot.at (iCoeff), true) ;
     
+          char pathname[300] ;
+          createCondorScripts (WScreation_commands.back (),
+                               destination_folder,
+                               cmssw_folder,
+                               getcwd (pathname, 300),
+                               iHisto->first) ;
+//          free (pathname) ;
+
         } //loop on variables  
 
       // creating the scripts to be launched to use combine
