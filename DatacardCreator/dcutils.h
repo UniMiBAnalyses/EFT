@@ -151,6 +151,12 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
                 std::string wilson_coeff_name, 
                 CfgParser * gConfigParser) ;
 
+void
+createCondorScripts (std::pair <std::string, std::string> fittingCommands,
+                     std::string output_folder,
+                     std::string cmssw_folder,
+                     std::string execution_folder,
+                     std::string varname) ;
 int 
 plotHistos (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
             std::string destinationfolder, std::string prefix, std::string varname, 
@@ -174,7 +180,7 @@ getRawIntersections (TGraph * graphScan, float val, float resol = 0.001) ;
 // get the list of crossings between a horizontal line and a tgraph
 // points should be dense enough
 std::vector <float>
-getLSintersections (TGraph * graphScan, float val, float resol = 0.001) ;
+getLSintersections (TGraph * graphScan, float val, float resol = 0.001, int attempts = 10) ;
 
 bool 
 sortBySensitivity (const std::pair<std::string, std::vector<float> > & a ,
@@ -188,6 +194,5 @@ void
 drawSensitivities (std::string op, 
                    std::vector <std::pair<std::string, std::vector<float> > > limits, 
                    std::string basefilename) ;
-
 
 #endif

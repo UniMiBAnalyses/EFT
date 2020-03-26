@@ -578,6 +578,29 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 
+void
+createCondorScripts (pair <std::string, string> fittingCommands,
+                     string output_folder,
+                     string cmssw_folder,
+                     string execution_folder,
+                     string varname)
+{
+  ofstream jobfile (output_folder + "/submit_" + varname + ".sh") ;
+  jobfile << "#!/usr/bin/bash\n" ;
+
+  jobfile << "cd " << cmssw_folder << "\n" ;
+  jobfile << "eval `scram run -sh`\n" ;
+  jobfile << "cd " << execution_folder << "\n" ;
+  jobfile << fittingCommands.first  << " > " << output_folder << "/WScreation_" << varname <<" .log 2>&1 \n" ;
+  jobfile << fittingCommands.second << " > " << output_folder << "/fitting_"    << varname << ".log 2>&1 \n" ;
+
+  jobfile.close () ;
+}
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
 int 
 plotHistos (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
             string destinationfolder, string prefix, string varname, 
@@ -721,14 +744,21 @@ getRawIntersections (TGraph * graphScan, float val, float resol)
 
 
 vector <float>
-getLSintersections (TGraph * graphScan, float val, float resol)
+getLSintersections (TGraph * graphScan, float val, float resol, int attempts)
 {
   vector <float> xings ;
-  while (xings.size () < 2)
+  while (xings.size () < 2 and attempts-- > 0)
     { 
       xings = getRawIntersections (graphScan, val, resol) ;
       resol *= 3 ;
     }
+  if (attempts <= 0)
+    {
+      cout << "WARNING: getLSintersections attempts saturated" << endl ;
+      cout << "         returning graph x-axis range extremes" << endl ;
+      xings.push_back (graphScan->GetXaxis ()->GetXmin ()) ;
+      xings.push_back (graphScan->GetXaxis ()->GetXmax ()) ;      
+    }  
   return xings ;
 }  
 

@@ -37,16 +37,15 @@ int main (int argc, char ** argv)
 
   CfgParser * gConfigParser = new CfgParser (argv[1]) ;
 
-  string wilson_coeff_name = gConfigParser->readStringOpt ("general::wilson_coeff_names") ;
-  string outfilesprefix    = gConfigParser->readStringOpt ("general::outfilesprefix") ;
-  string destinationfolder = gConfigParser->readStringOpt ("general::destinationfolder") ;
+  vector<string> wilson_coeff_names = gConfigParser->readStringListOpt ("general::wilson_coeff_names") ;
+
+  string outfiles_prefix           = gConfigParser->readStringOpt ("output::outfiles_prefix") ;
+  string destination_folder_prefix = gConfigParser->readStringOpt ("output::destination_folder_prefix") ;
+
   vector<string> variables = gConfigParser->readStringListOpt ("general::variables") ;
   float luminosity         = gConfigParser->readFloatOpt ("general::luminosity") ;
-  outfilesprefix += ("_" + wilson_coeff_name) ;
 
   TCanvas c1 ("c1", "", 600, 600) ;
-
-  TString toDraw = Form ("2*deltaNLL:%s", ("k_" + wilson_coeff_name).c_str ()) ;
 
   TLatex * tex1 = new TLatex (0.94, 0.92, "13 TeV") ;
   tex1->SetNDC () ;
@@ -61,76 +60,91 @@ int main (int argc, char ** argv)
   tex2->SetTextSize (0.035) ;
   tex2->SetLineWidth (2) ;
 
-
-  vector <pair<string, vector<float> > > limits ;
-  // loop on variables
-  for (int iVar = 0 ; iVar < variables.size () ; ++iVar)
+  // loop over Wilson coefficients
+  for (int iCoeff = 0 ; iCoeff < wilson_coeff_names.size () ; ++iCoeff)
     {
-      // build the results filename
-      string filename = destinationfolder + "/" + outfilesprefix + "_" + variables.at (iVar) + "_fitresult.root" ;
-      TFile * result_file = new TFile (filename.c_str ()) ;
-      TTree * limit = (TTree*) result_file->Get ("limit") ;  
-      int n = limit->Draw (toDraw.Data () , "deltaNLL<50 && deltaNLL>-30", "l") ;
-      TGraph * graphScan = new TGraph (n, limit->GetV2 (),limit->GetV1 ()) ;
-      graphScan->RemovePoint (0) ;
-      setLSaspect (graphScan, wilson_coeff_name) ;
-      graphScan->Draw ("AL") ;
-//      graphScan->SetMarkerStyle (2) ;
-//      graphScan->SetMarkerColor (4) ;
-//      graphScan->Draw ("ALP") ;
 
-      //  2deltaLogL = 1.00
-      pair<float, float> xrange = getXrange (graphScan) ;
+      cout << "--> coeff " << wilson_coeff_names.at (iCoeff) << endl ;
+      cout << "---- ---- ---- ---- ---- ---- ---- ---- ---- " << endl ;
+
+      string wilson_coeff_name = wilson_coeff_names.at (iCoeff) ;
+      string destinationfolder = destination_folder_prefix + "_" + wilson_coeff_names.at (iCoeff) ;
+      TString toDraw = Form ("2*deltaNLL:%s", ("k_" + wilson_coeff_name).c_str ()) ;
+
+      vector <pair<string, vector<float> > > limits ;
+      // loop on variables
+      for (int iVar = 0 ; iVar < variables.size () ; ++iVar)
+        {
+          cout << "--> var " << variables.at (iVar) << endl ;
+
+          // build the results filename
+          string filename = destinationfolder + "/" + outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff) + "_" + variables.at (iVar) + "_fitresult.root" ;
+          TFile * result_file = new TFile (filename.c_str ()) ;
+          TTree * limit = (TTree*) result_file->Get ("limit") ;  
+          int n = limit->Draw (toDraw.Data () , "deltaNLL<50 && deltaNLL>-30", "l") ;
+          TGraph * graphScan = new TGraph (n, limit->GetV2 (),limit->GetV1 ()) ;
+          graphScan->RemovePoint (0) ;
+          setLSaspect (graphScan, wilson_coeff_name) ;
+          graphScan->Draw ("AL") ;
+//          graphScan->SetMarkerStyle (2) ;
+//          graphScan->SetMarkerColor (4) ;
+//          graphScan->Draw ("ALP") ;
+
+              //  2deltaLogL = 1.00
+          pair<float, float> xrange = getXrange (graphScan) ;
+          
+          //   TLine *line1 = new TLine((limit->GetV2())[0],1.0,(limit->GetV2())[n-1],1.0);
+          TLine *line1 = new TLine (xrange.first, 1.0, xrange.second, 1.0) ;
+          line1->SetLineWidth (2) ;
+          line1->SetLineStyle (2) ;
+          line1->SetLineColor (kRed) ;
+          line1->Draw () ; 
+            
+          //  2deltaLogL = 3.84
+          //   TLine *line2 = new TLine((limit->GetV2())[0],3.84,(limit->GetV2())[n-1],3.84);
+          TLine *line2 = new TLine (xrange.first, 3.84, xrange.second, 3.84) ;
+          line2->SetLineWidth (2) ;
+          line2->SetLineStyle (2) ;
+          line2->SetLineColor (kRed) ;
+          line2->Draw () ;
       
-      //   TLine *line1 = new TLine((limit->GetV2())[0],1.0,(limit->GetV2())[n-1],1.0);
-      TLine *line1 = new TLine (xrange.first, 1.0, xrange.second, 1.0) ;
-      line1->SetLineWidth (2) ;
-      line1->SetLineStyle (2) ;
-      line1->SetLineColor (kRed) ;
-      line1->Draw () ; 
-        
-      //  2deltaLogL = 3.84
-      //   TLine *line2 = new TLine((limit->GetV2())[0],3.84,(limit->GetV2())[n-1],3.84);
-      TLine *line2 = new TLine (xrange.first, 3.84, xrange.second, 3.84) ;
-      line2->SetLineWidth (2) ;
-      line2->SetLineStyle (2) ;
-      line2->SetLineColor (kRed) ;
-      line2->Draw () ;
-  
-      c1.RedrawAxis () ;
+          c1.RedrawAxis () ;
 
-      TLatex * tex3 = new TLatex (0.14, 0.92,  gvarNames.at (variables.at (iVar)).c_str ()) ;
-//      TLatex * tex2 = new TLatex (0.14, 0.92,  "m^{jj}") ;
-      tex3->SetNDC () ;
-      tex3->SetTextFont (61) ;
-      tex3->SetTextSize (0.04) ;
-      tex3->SetLineWidth (2) ;
-  
-      tex1->Draw ("same") ;
-      tex2->Draw ("same") ;
-      tex3->Draw ("same") ;
+          TLatex * tex3 = new TLatex (0.14, 0.92,  gvarNames.at (variables.at (iVar)).c_str ()) ;
+//          TLatex * tex2 = new TLatex (0.14, 0.92,  "m^{jj}") ;
+          tex3->SetNDC () ;
+          tex3->SetTextFont (61) ;
+          tex3->SetTextSize (0.04) ;
+          tex3->SetLineWidth (2) ;
+      
+          tex1->Draw ("same") ;
+          tex2->Draw ("same") ;
+          tex3->Draw ("same") ;
 
-      TLegend legend (0.70, 0.80, 0.90, 0.90) ;
-      legend.AddEntry (graphScan, "likelihood scan", "l") ;
-      legend.SetBorderSize (0) ;
-      legend.SetFillStyle (0) ;
-      legend.Draw () ;
+          TLegend legend (0.70, 0.80, 0.90, 0.90) ;
+          legend.AddEntry (graphScan, "likelihood scan", "l") ;
+          legend.SetBorderSize (0) ;
+          legend.SetFillStyle (0) ;
+          legend.Draw () ;
 
-      string outfilename = destinationfolder + "/" + outfilesprefix + "_" + variables.at (iVar) + "_scan.png" ;
-      c1.SaveAs (outfilename.c_str ()) ;
+          string outfilename = destinationfolder + "/" + outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff) + "_" + variables.at (iVar) + "_scan.png" ;
+          c1.SaveAs (outfilename.c_str ()) ;
 
-      // ranges
-      // ----
+          // ranges
+          // ---- ---- ---- ---- ---- ----
 
-      cout << getLSminimum (graphScan) << endl ;
-      vector<float> OSB = getLSintersections (graphScan, 1., 0.001) ; // One Sigma Boundaries
-      vector<float> TSB = getLSintersections (graphScan, 3.84, 0.001) ;  // Two Sigma Boundaries
-      OSB.insert (OSB.end (), TSB.begin (), TSB.end ()) ; 	
-      limits.push_back (pair<string, vector<float> > (variables.at (iVar),OSB)) ;
-    }
+          cout << getLSminimum (graphScan) << endl ;
+          vector<float> OSB = getLSintersections (graphScan, 1., 0.001) ; // One Sigma Boundaries
+          vector<float> TSB = getLSintersections (graphScan, 3.84, 0.001) ;  // Two Sigma Boundaries
+          OSB.insert (OSB.end (), TSB.begin (), TSB.end ()) ; 	
+          limits.push_back (pair<string, vector<float> > (variables.at (iVar),OSB)) ;
 
-  sort (limits.begin (), limits.end (), sortBySensitivity) ;
-  drawSensitivities (wilson_coeff_name, limits, destinationfolder + "/" + outfilesprefix) ;
+        } // loop on variables
+
+      sort (limits.begin (), limits.end (), sortBySensitivity) ;
+      drawSensitivities (wilson_coeff_name, limits, destinationfolder + "/" + outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff)) ;
+
+    } // loop over Wilson coefficients
 
   return 0 ; 
 
