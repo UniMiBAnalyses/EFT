@@ -134,8 +134,8 @@ int main (int argc, char ** argv)
           // ---- ---- ---- ---- ---- ----
 
           cout << getLSminimum (graphScan) << endl ;
-          vector<float> OSB = getLSintersections (graphScan, 1., 0.001) ; // One Sigma Boundaries
-          vector<float> TSB = getLSintersections (graphScan, 3.84, 0.001) ;  // Two Sigma Boundaries
+          vector<float> OSB = getLSintersections (graphScan, 1.  ) ; // One Sigma Boundaries
+          vector<float> TSB = getLSintersections (graphScan, 3.84) ; // Two Sigma Boundaries
           OSB.insert (OSB.end (), TSB.begin (), TSB.end ()) ; 	
           limits.push_back (pair<string, vector<float> > (variables.at (iVar),OSB)) ;
 

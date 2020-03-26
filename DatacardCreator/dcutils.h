@@ -175,12 +175,7 @@ getLSminimum (TGraph * graphScan) ;
 // get the list of crossings between a horizontal line and a tgraph
 // points should be dense enough
 std::vector <float>
-getRawIntersections (TGraph * graphScan, float val, float resol = 0.001) ;
-
-// get the list of crossings between a horizontal line and a tgraph
-// points should be dense enough
-std::vector <float>
-getLSintersections (TGraph * graphScan, float val, float resol = 0.001, int attempts = 10) ;
+getLSintersections (TGraph * graphScan, float val) ;
 
 bool 
 sortBySensitivity (const std::pair<std::string, std::vector<float> > & a ,

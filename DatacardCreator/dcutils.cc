@@ -568,6 +568,9 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   fitting_command += " --setParameters r=1," ; // + paramFreeze.second ;
   fitting_command += " --setParameterRanges k_" + wilson_coeff_name + "=-2,2" ;
   fitting_command += " --verbose " + comb_verbosity ;
+  fitting_command += " --robustFit=1" ;
+  fitting_command += " --X-rtd FITTER_NEW_CROSSING_ALGO" ;
+  fitting_command += " --X-rtd FITTER_NEVER_GIVE_UP" ;
   replace (rootfilename, "_WS.root", "_fitresult.root") ;
   fitting_command += " ; mv higgsCombineTest.MultiDimFit.mH125.root " + rootfilename  ;
 
@@ -703,7 +706,7 @@ getLSminimum (TGraph * graphScan)
 
 
 vector <float>
-getRawIntersections (TGraph * graphScan, float val, float resol)
+getLSintersections (TGraph * graphScan, float val)
 {
   vector <float> xings ;
   int n = graphScan->GetN () ;
@@ -712,53 +715,40 @@ getRawIntersections (TGraph * graphScan, float val, float resol)
   bool found = false ;
   pair<float, float> around ;
   // loop over tgraph points
-  for (int i = 0 ; i < n ; ++i)
+  for (int i = 1 ; i < n ; ++i)
     {
-      if (fabs (y[i] - val) < resol)
+      if (y[i] == val) 
         {
-          if (!found) 
-            {
-              found = true ;
-              around.first = x[i] ;
-              around.second = x[i] ;
-            }
-          else  
-            {
-              around.second = x[i] ;
-            }
+          xings.push_back (x[i]) ;
+          continue ;
+        }  
+      // notice a crossing 
+      if ((y[i] - val) * (y[i-1] - val) < 0)
+        {
+          xings.push_back (x[i-1] +  fabs ((y[i-1] - val) * (x[i] - x[i-1]) / (y[i] - y[i-1])) ) ;
+        }
+    }  // loop over tgraph points
+
+  if (xings.size () == 0)
+    { 
+      cout << "WARNING: returning graph x-axis range limits" << endl ;
+      xings.push_back (graphScan->GetXaxis ()->GetXmin ()) ;
+      xings.push_back (graphScan->GetXaxis ()->GetXmax ()) ;
+    }
+  else if (xings.size () == 1)
+    {
+      if (xings.back () < 0) 
+        {
+          cout << "WARNING: returning graph x-axis higher limit" << endl ;
+          xings.push_back (graphScan->GetXaxis ()->GetXmax ()) ;
         }
       else 
         {
-          if (found) 
-            {
-              xings.push_back (0.5 * (around.second + around.first)) ;
-              found = false ;
-            }
+          cout << "WARNING: returning graph x-axis lower limit" << endl ;
+          xings.push_back (xings.back ()) ;
+          xings.at (0) = graphScan->GetXaxis ()->GetXmin () ;
         }
-    }  // loop over tgraph points
-  return xings ;
-}
-
-
-// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
-
-
-vector <float>
-getLSintersections (TGraph * graphScan, float val, float resol, int attempts)
-{
-  vector <float> xings ;
-  while (xings.size () < 2 and attempts-- > 0)
-    { 
-      xings = getRawIntersections (graphScan, val, resol) ;
-      resol *= 3 ;
     }
-  if (attempts <= 0)
-    {
-      cout << "WARNING: getLSintersections attempts saturated" << endl ;
-      cout << "         returning graph x-axis range extremes" << endl ;
-      xings.push_back (graphScan->GetXaxis ()->GetXmin ()) ;
-      xings.push_back (graphScan->GetXaxis ()->GetXmax ()) ;      
-    }  
   return xings ;
 }  
 
