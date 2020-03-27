@@ -6,6 +6,7 @@
 #include <iostream>
 #include <algorithm>
 #include <fstream>
+#include <sstream>
 
 #include "TTreeReader.h"
 #include "TFile.h"
@@ -162,6 +163,23 @@ void setTDRStyle ()
   tdrStyle->cd();
 
   return ;
+}
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+vector<string> 
+split (const string& s, char delimiter)
+{
+   vector<string> tokens;
+   string token ;
+   istringstream tokenStream (s) ;
+   while (getline (tokenStream, token, delimiter))
+   {
+      tokens.push_back (token) ;
+   }
+   return tokens ;
 }
 
 
@@ -583,6 +601,21 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 
+string findAfter (const vector<string> & command, const string & token)
+{
+  bool found = false ; 
+  for (int i = 0 ; i < command.size () ; ++i)
+    {
+      if (found) return command.at (i) ;
+      if (command.at (i) == token) found = true ;
+    }
+  return "NOTHING_FOUND" ;
+} 
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
 void
 createCondorScripts (pair <std::string, string> fittingCommands,
                      string output_folder,
@@ -590,20 +623,49 @@ createCondorScripts (pair <std::string, string> fittingCommands,
                      string execution_folder,
                      string varname)
 {
+
+  string folder = execution_folder + "/" + output_folder ;
+
+  vector<string> step1words = split (fittingCommands.first, ' ') ;
+  string output1 = findAfter (step1words, "-o") ;
+  string output2 = findAfter (step1words, ">") ;
+  vector<string> step2words = split (fittingCommands.second, ' ') ;
+  string output3 = findAfter (step2words, ">") ;
   ofstream jobfile (output_folder + "/submit_" + varname + ".sh") ;
   jobfile << "#!/usr/bin/bash\n" ;
-
   jobfile << "cd " << cmssw_folder << "\n" ;
   jobfile << "eval `scram run -sh`\n" ;
-  jobfile << "cd " << execution_folder << "\n" ;
+  jobfile << "cd -\n" ;
+  jobfile << "cp -r " << folder << " ./\n" ; 
   jobfile << fittingCommands.first  << "\n" ;
   jobfile << fittingCommands.second << "\n" ;
-
+  jobfile << "cp " << output1            << " " << folder << "\n" ; 
+  jobfile << "cp " << output2            << " " << folder << "\n" ; 
+  jobfile << "cp " << output3            << " " << folder << "\n" ; 
+  jobfile << "cp " << step2words.back () << " " << folder << "\n" ; 
   jobfile.close () ;
+
+  ofstream submitfile (output_folder + "/submit_" + varname + ".sub") ;
+  submitfile << "executable = " + output_folder + "/submit_" + varname + ".sh\n" ;
+  submitfile << "output     = " + output_folder + "/submit_" + varname + ".out\n" ;
+  submitfile << "error      = " + output_folder + "/submit_" + varname + ".err\n" ;
+  submitfile << "log        = " + output_folder + "/submit_" + varname + ".log\n" ;
+  submitfile << "queue 1\n" ;
+  submitfile << "+JobFlavour = \"espresso\"\n" ;
+  submitfile.close () ;
+
+// espresso  20min 8nm
+// microcentury  1h  1nh
+// longlunch 2h  8nh
+// workday 8h  1nd
+// tomorrow  1d  2nd
+// testmatch 3d  1nw
+// nextweek  1w  2nw
+
 }
 
 
-// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+// ---- ----" + 
 
 
 int 
@@ -751,6 +813,12 @@ getLSintersections (TGraph * graphScan, float val)
           xings.at (0) = graphScan->GetXaxis ()->GetXmin () ;
         }
     }
+  if (xings.size () > 2) 
+    {
+      cout << "WARNING: more than two intersections found, returning the first two" << endl ;
+      xings.resize (2) ;
+
+    }
   return xings ;
 }  
 
@@ -758,8 +826,10 @@ getLSintersections (TGraph * graphScan, float val)
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 
-bool sortBySensitivity (const pair<string, vector<float> > & a ,
-                        const pair<string, vector<float> > & b)
+bool
+sortBySensitivity (const limits_var & a ,
+                   const limits_var & b)
+
 {
   return (  (0.5 * (a.second[0] - a.second[1]))
           < (0.5 * (b.second[0] - b.second[1])) ) ;
@@ -788,7 +858,7 @@ TH1F * setDummyHisto (float xmin, float ymin, float xmax, float ymax,
 
 void 
 drawSensitivities (string op, 
-                   vector <pair<string, vector<float> > > limits, 
+                   limits_var_v limits, 
                    string basefilename)
 {
 
@@ -880,6 +950,38 @@ drawSensitivities (string op,
   return ;
 }
 
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+void 
+writeCSVlimits (limits_op_v all_limits, 
+                string basefilename)
+{
+  // save numbers in a csv file
+  // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
+
+  ofstream myfile;
+  myfile.open ((basefilename + "_CSV.txt").c_str ()) ;
+  myfile << "operator, variable, 1sigmaLow, 1sigmaHigh, 2sigmaLow, 2sigmaHigh\n" ;
+  for (int iOp = 0 ; iOp < all_limits.size () ; ++iOp)
+    {
+      string op = all_limits.at (iOp).first ;
+      for (int iVar = 0 ; iVar < all_limits.at(iOp).second.size () ; ++iVar)
+        {
+          myfile << op
+                 << ", " << all_limits.at(iOp).second.at (iVar).first
+                 << ", " << all_limits.at(iOp).second.at (iVar).second.at (0)
+                 << ", " << all_limits.at(iOp).second.at (iVar).second.at (1)
+                 << ", " << all_limits.at(iOp).second.at (iVar).second.at (2)
+                 << ", " << all_limits.at(iOp).second.at (iVar).second.at (3)
+                 << "\n" ;
+        }
+    }
+  myfile.close () ;
+ 
+  return ;
+}
 
 
 

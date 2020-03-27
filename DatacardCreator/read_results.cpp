@@ -60,6 +60,8 @@ int main (int argc, char ** argv)
   tex2->SetTextSize (0.035) ;
   tex2->SetLineWidth (2) ;
 
+  limits_op_v all_limits ;
+
   // loop over Wilson coefficients
   for (int iCoeff = 0 ; iCoeff < wilson_coeff_names.size () ; ++iCoeff)
     {
@@ -71,7 +73,7 @@ int main (int argc, char ** argv)
       string destinationfolder = destination_folder_prefix + "_" + wilson_coeff_names.at (iCoeff) ;
       TString toDraw = Form ("2*deltaNLL:%s", ("k_" + wilson_coeff_name).c_str ()) ;
 
-      vector <pair<string, vector<float> > > limits ;
+      limits_var_v limits ;
       // loop on variables
       for (int iVar = 0 ; iVar < variables.size () ; ++iVar)
         {
@@ -137,14 +139,18 @@ int main (int argc, char ** argv)
           vector<float> OSB = getLSintersections (graphScan, 1.  ) ; // One Sigma Boundaries
           vector<float> TSB = getLSintersections (graphScan, 3.84) ; // Two Sigma Boundaries
           OSB.insert (OSB.end (), TSB.begin (), TSB.end ()) ; 	
-          limits.push_back (pair<string, vector<float> > (variables.at (iVar),OSB)) ;
+          limits.push_back (limits_var (variables.at (iVar), OSB)) ;
 
         } // loop on variables
 
       sort (limits.begin (), limits.end (), sortBySensitivity) ;
+      all_limits.push_back (limits_op (wilson_coeff_name, limits)) ;
       drawSensitivities (wilson_coeff_name, limits, destinationfolder + "/" + outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff)) ;
 
     } // loop over Wilson coefficients
+
+  writeCSVlimits (all_limits, outfiles_prefix + "_CSV") ;
+  
 
   return 0 ; 
 

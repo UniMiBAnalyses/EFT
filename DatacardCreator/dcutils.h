@@ -13,6 +13,13 @@
 
 #include "CfgParser.h"
 
+typedef unsigned long ulong ;
+
+typedef std::pair<std::string, std::vector<float> > limits_var ;
+typedef std::vector<limits_var> limits_var_v ;
+typedef std::pair<std::string, limits_var_v > limits_op ;
+typedef std::vector<limits_op> limits_op_v ;
+
 const std::vector<std::string> gAllCoeff 
   {
     "cG",
@@ -118,6 +125,9 @@ const std::map<std::string, std::string> gvarNames
 
 void setTDRStyle () ;
 
+std::vector<std::string> 
+split (const std::string& s, char delimiter) ;
+
 bool 
 replace (std::string& str, const std::string& from, const std::string& to) ;
 
@@ -151,6 +161,9 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
                 std::string wilson_coeff_name, 
                 CfgParser * gConfigParser) ;
 
+std::string 
+findAfter (const std::vector<std::string> & command, const std::string & token) ;
+
 void
 createCondorScripts (std::pair <std::string, std::string> fittingCommands,
                      std::string output_folder,
@@ -178,8 +191,8 @@ std::vector <float>
 getLSintersections (TGraph * graphScan, float val) ;
 
 bool 
-sortBySensitivity (const std::pair<std::string, std::vector<float> > & a ,
-                   const std::pair<std::string, std::vector<float> > & b) ;
+sortBySensitivity (const limits_var & a ,
+                   const limits_var & b) ;
 
 TH1F * 
 setDummyHisto (float xmin, float ymin, float xmax, float ymax, 
@@ -187,7 +200,11 @@ setDummyHisto (float xmin, float ymin, float xmax, float ymax,
 
 void 
 drawSensitivities (std::string op, 
-                   std::vector <std::pair<std::string, std::vector<float> > > limits, 
+                   limits_var_v limits, 
                    std::string basefilename) ;
+
+void 
+writeCSVlimits (limits_op_v all_limits, 
+                std::string basefilename) ;
 
 #endif
