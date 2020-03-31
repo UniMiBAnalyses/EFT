@@ -511,8 +511,9 @@ merge (vector<string> list, const string & joint)
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 
+// NEW version, to replace the other one also for 1D
 pair <string, string>  
-createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
+createDataCard (TH1F * h_SM, map<string, TH1F *> h_eftInput, 
                 string destinationfolder, string prefix, string varname,
                 string wilson_coeff_name, 
                 CfgParser * gConfigParser)
@@ -523,14 +524,15 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
   string comb_verbosity = gConfigParser->readStringOpt ("combine::verbosity") ;
   string comb_model     = gConfigParser->readStringOpt ("combine::model") ;
 
-//  string wilson_coeff_list = gConfigParser->readStringOpt ("general::wilson_coeff_names") ;
-  vector<string> wilson_coeff_names = gConfigParser->readStringListOpt ("general::wilson_coeff_names") ;
+//  string wilson_coeff_list = gConfigParser->readStringOpt ("eft::wilson_coeff_names") ;
+  vector<string> wilson_coeff_names = gConfigParser->readStringListOpt ("eft::wilson_coeff_names") ;
 
   TFile outf (rootfilename.c_str (), "recreate") ;
   h_SM->Write ("histo_sm") ;
-  h_LI->Write (("histo_linear_" + wilson_coeff_name).c_str ()) ;
-  h_QU->Write (("histo_quadratic_" + wilson_coeff_name).c_str ()) ;
-  outf.Close () ;
+  for (map<string, TH1F *>::iterator it = h_eftInput.begin () ; 
+       it != h_eftInput.end () ; ++it)
+    it->second->Write (("histo_" + it->first).c_str ()) ;
+  outf.Close () ; // PG will this generate memory problems when using histos later on?
 
   // create the root file containing the three histograms
   string txtfilename = destinationfolder + "/" + prefix + "_" + varname + ".txt" ;
@@ -552,14 +554,21 @@ createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU,
 
   output_datacard << "bin\t\ttest\ttest\ttest\n";
   output_datacard << "process\t"
-                  << "\tsm"
-                  << "\tlinear_" + wilson_coeff_name
-                  << "\tquadratic_" + wilson_coeff_name + "\n" ;
-  output_datacard << "process\t\t0\t1\t2\n" ;
+                  << "\tsm" ;
+  for (map<string, TH1F *>::iterator it = h_eftInput.begin () ; 
+       it != h_eftInput.end () ; ++it)
+    output_datacard << "\t" << it->first ;
+  output_datacard << "\n" ;
+
+  output_datacard << "process\t\t0" ;
+  for (int i = 0 ; i < h_eftInput.size () ; ++i) output_datacard << "\t" << i+1 ;
+  output_datacard << "\n" ;
   output_datacard << "rate\t\t" 
-                  << h_SM->Integral () << "\t" 
-                  << h_LI->Integral () << "\t"
-                  << h_QU->Integral () << "\n" ;
+                  << h_SM->Integral () << "\t" ;
+  for (map<string, TH1F *>::iterator it = h_eftInput.begin () ; 
+       it != h_eftInput.end () ; ++it)
+    output_datacard << it->second->Integral () << "\t" ;
+  output_datacard << "\n" ;
   output_datacard <<separator ;
   output_datacard <<"lumi\t\tlnN\t1.02\t1.02\t1.02\n";
   output_datacard <<"bla\t\tlnN\t-\t-\t1.05\n";
@@ -984,4 +993,64 @@ writeCSVlimits (limits_op_v all_limits,
 }
 
 
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+bridge::bridge (vector<string> &v1, vector<float> &v2, vector<float> &v3)
+  {
+    vector<float> dummy ;
+    dummy.push_back (0.) ; 
+    dummy.push_back (0.) ; 
+    for (int i = 0 ; i < v1.size () ; ++i)
+      {
+        dummy.at (0) = v2.at (i) ;
+        dummy.at (1) = v3.at (i) ;
+        m_container.push_back ( pair<string, vector<float>> (v1.at (i), dummy) ) ;
+      }  
+  } 
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+void bridge::pour (vector<string> &v1, vector<float> &v2, vector<float> &v3)
+  {
+    assert (v1.size () == m_container.size ()) ;  
+    assert (v2.size () == m_container.size ()) ;  
+    assert (v3.size () == m_container.size ()) ;  
+    for (int i = 0 ; i < m_container.size () ; ++i)
+      {
+        v1.at (i) = m_container.at (i).first ;
+        v2.at (i) = m_container.at (i).second.at (0) ;
+        v3.at (i) = m_container.at (i).second.at (1) ;
+      }
+    return ;
+  }
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+bool
+sortByFirstElem (const std::pair<std::string, std::vector<float> > & a , 
+                 const std::pair<std::string, std::vector<float> > & b) 
+{
+  return a.first < b.first ;
+}
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+void
+jointSort (vector<string> &v1, vector<float> &v2, vector<float> &v3)
+{
+  assert (v1.size () == v2.size ()) ;
+  assert (v2.size () == v3.size ()) ;
+  bridge sorter (v1, v2, v3) ;
+  sort (sorter.m_container.begin (), sorter.m_container.end (), sortByFirstElem) ;
+  sorter.pour (v1, v2, v3) ;
+
+  return ;
+}
 

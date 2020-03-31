@@ -49,9 +49,9 @@ int main (int argc, char ** argv)
   // reading generic parameters of the generation
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
-  vector<string> wilson_coeff_names = gConfigParser->readStringListOpt ("general::wilson_coeff_names") ;
-  vector<float> wilson_coeffs_plot  = gConfigParser->readFloatListOpt ("general::wilson_coeffs_plot") ;
-  vector<float> wilson_coeffs       = gConfigParser->readFloatListOpt ("general::wilson_coeffs_gen") ;
+  vector<string> wilson_coeff_names = gConfigParser->readStringListOpt ("eft::wilson_coeff_names") ;
+  vector<float> wilson_coeffs_plot  = gConfigParser->readFloatListOpt ("eft::wilson_coeffs_plot") ;
+  vector<float> wilson_coeffs       = gConfigParser->readFloatListOpt ("eft::wilson_coeffs_gen") ;
 
   // reading input and output files information
   // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
@@ -71,7 +71,8 @@ int main (int argc, char ** argv)
       "SM_", "sm", gConfigParser
     ) ;
 
-  // loop over Wilson coefficients
+  // loop over Wilson coefficients for 1D fits
+  // and create datacards, root files, and condor scripts for 1D fits
   for (int iCoeff = 0 ; iCoeff < wilson_coeff_names.size () ; ++iCoeff)
     {
       cout << "--> coeff " << wilson_coeff_names.at (iCoeff) << endl ;
@@ -114,8 +115,14 @@ int main (int argc, char ** argv)
           TH1F * h_SM = iHisto->second ;
           TH1F * h_LI = hmap_LI.at (iHisto->first) ;
           TH1F * h_QU = hmap_QU.at (iHisto->first) ;
+
+          map<string, TH1F *> h_eftInputs ;
+          h_eftInputs["linear_" + wilson_coeff_names.at (iCoeff)]      = h_LI ;
+          h_eftInputs["quadratic_" + wilson_coeff_names.at (iCoeff)]   = h_QU ;
+
           WScreation_commands.push_back (
-              createDataCard (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
+              createDataCard (h_SM, h_eftInputs, 
+                              destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
                               iHisto->first, wilson_coeff_names.at (iCoeff),
                               gConfigParser)
             ) ;
@@ -130,7 +137,6 @@ int main (int argc, char ** argv)
                                cmssw_folder,
                                getcwd (pathname, 300),
                                iHisto->first) ;
-//          free (pathname) ;
 
         } //loop on variables  
 
@@ -157,7 +163,8 @@ int main (int argc, char ** argv)
       cout << "To launch the fitting process, run (from the same folder where datacard_creator_2 was executed): \n";
       cout << "source " << destination_folder << "/launchFitting.sh\n" ;
 
-    } // loop over Wilson coefficients
+    } // loop over Wilson coefficients for 1D fits
+
 
   return 0 ;
 }

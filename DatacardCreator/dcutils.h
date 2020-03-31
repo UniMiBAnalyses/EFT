@@ -10,6 +10,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <cassert>
 
 #include "CfgParser.h"
 
@@ -156,7 +157,7 @@ std::string
 merge (std::vector<std::string> list, const std::string & joint) ;
 
 std::pair <std::string, std::string>
-createDataCard (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
+createDataCard (TH1F * h_SM, std::map<std::string, TH1F *> h_eftInfo, 
                 std::string destinationfolder, std::string prefix, std::string varname,
                 std::string wilson_coeff_name, 
                 CfgParser * gConfigParser) ;
@@ -206,5 +207,38 @@ drawSensitivities (std::string op,
 void 
 writeCSVlimits (limits_op_v all_limits, 
                 std::string basefilename) ;
+
+
+// PG not working like this, should be the natural way to go I guess
+// template <class T>
+// bool
+// sortByFirstElem (const T & a , const T & b)
+
+// {
+//   return a.first < b.first ;
+// }
+
+bool
+sortByFirstElem (const std::pair<std::string, std::vector<float> > & a , 
+                 const std::pair<std::string, std::vector<float> > & b) ;
+
+
+struct bridge 
+{
+  public:
+    bridge (std::vector<std::string> &v1, std::vector<float> &v2, std::vector<float> &v3) ;
+    void pour (std::vector<std::string> &v1, std::vector<float> &v2, std::vector<float> &v3) ;
+    std::vector<std::pair<std::string, std::vector<float> > > m_container ;
+} ;
+
+void
+jointSort (std::vector<std::string> &v1, std::vector<float> &v2, std::vector<float> &v3) ;
+
+
+
+
+
+
+
 
 #endif
