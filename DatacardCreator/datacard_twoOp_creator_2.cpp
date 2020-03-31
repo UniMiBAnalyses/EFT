@@ -121,7 +121,6 @@ int main (int argc, char ** argv)
           map<string, TH1F *> hmap_IN = readNtupleFile (input_files[4], ntuple_names[4], wilson_coeff_names.at (iCoeff1) + "_" + wilson_coeff_names.at (iCoeff2) + "_IN_", "interference", gConfigParser) ;
           scaleAllHistos (hmap_IN, 1./(wilson_coeffs.at (iCoeff1) * wilson_coeffs.at (iCoeff2))) ;
     
-//PG FINO A QUI
           // creating datacards and rootfile for each variable
           // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
     
