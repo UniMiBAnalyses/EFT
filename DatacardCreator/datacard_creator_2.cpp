@@ -120,16 +120,27 @@ int main (int argc, char ** argv)
           h_eftInputs["linear_" + wilson_coeff_names.at (iCoeff)]      = h_LI ;
           h_eftInputs["quadratic_" + wilson_coeff_names.at (iCoeff)]   = h_QU ;
 
+          vector<string> active_coeffs ; 
+          active_coeffs.push_back (wilson_coeff_names.at (iCoeff)) ;
+
           WScreation_commands.push_back (
               createDataCard (h_SM, h_eftInputs, 
                               destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
-                              iHisto->first, wilson_coeff_names.at (iCoeff),
+                              iHisto->first, active_coeffs,
                               gConfigParser)
             ) ;
-          plotHistos (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
-                      iHisto->first, wilson_coeffs.at (iCoeff), wilson_coeffs_plot.at (iCoeff)) ;
-          plotHistos (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
-                      iHisto->first, wilson_coeffs.at (iCoeff), wilson_coeffs_plot.at (iCoeff), true) ;
+
+          vector<float> h_rescales ;
+          h_rescales.push_back (wilson_coeffs_plot.at (iCoeff) / wilson_coeffs.at (iCoeff)) ; // Lin C1
+          h_rescales.push_back (h_rescales.back () * h_rescales.back ()) ;                    // Qua C1
+
+          plotHistos (h_SM, h_eftInputs, destination_folder, 
+                      outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
+                      iHisto->first, h_rescales) ;
+
+          plotHistos (h_SM, h_eftInputs, destination_folder, 
+                      outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
+                      iHisto->first, h_rescales, true) ;
     
           char pathname[300] ;
           createCondorScripts (WScreation_commands.back (),

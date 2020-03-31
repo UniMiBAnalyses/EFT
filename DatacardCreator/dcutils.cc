@@ -471,26 +471,35 @@ checkEmptyBins (std::map<std::string, TH1F *> & hMap)
 
 
 // build the list of the operators to be frozen
-pair <string, string>
+vector <string>
 prepareFreeze (vector<string> activeCoeff)
 {
-  if (activeCoeff.size () == gAllCoeff.size ()) return pair <string, string> ("", "") ; 
-  string list = "k_" ;
-  string vals = "k_" ;
+  string range = "-2,2" ;
+  string list = "" ;
+  string vals = "" ;
+  string active = "" ;
   for (int iCoeff = 0 ; iCoeff < gAllCoeff.size () ; ++iCoeff)
     { 
       if (find (activeCoeff.begin (), activeCoeff.end (), gAllCoeff.at (iCoeff)) 
           == activeCoeff.end () ) 
         {
-          list += gAllCoeff.at (iCoeff) + ",k_" ;
-          vals += gAllCoeff.at (iCoeff) + "=0,k_" ;
+          list += "k_" + gAllCoeff.at (iCoeff) + "," ;
+          vals += "k_" + gAllCoeff.at (iCoeff) + "=0," ;
+
         }
+      else
+        {
+          active += "k_" + gAllCoeff.at (iCoeff) + "," ;
+          range += "k_" + gAllCoeff.at (iCoeff) + "=" + range + "," ;
+        }  
     }
   // remove the last comma
-  return pair<string, string> (
-     list.substr (0, list.size () - 1),
-     vals.substr (0, vals.size () - 1)
-    ) ; 
+  vector<string> result ;
+  result.push_back (list.substr (0, list.size () - 1)) ;
+  result.push_back (vals.substr (0, list.size () - 1)) ;
+  result.push_back (active.substr (0, list.size () - 1)) ;
+  result.push_back (range.substr (0, list.size () - 1)) ;
+  return result ;
 }
 
 
@@ -515,7 +524,7 @@ merge (vector<string> list, const string & joint)
 pair <string, string>  
 createDataCard (TH1F * h_SM, map<string, TH1F *> h_eftInput, 
                 string destinationfolder, string prefix, string varname,
-                string wilson_coeff_name, 
+                vector<string> active_coeffs, 
                 CfgParser * gConfigParser)
 {
   // create the root file containing the three histograms
@@ -584,17 +593,15 @@ createDataCard (TH1F * h_SM, map<string, TH1F *> h_eftInput,
   wscreation_command += rootfilename ;
   wscreation_command += " > " + destinationfolder + "/WScreation_" + varname + ".log 2>&1" ; 
 
-  vector<string> activeCoeff ; 
-  activeCoeff.push_back (wilson_coeff_name) ;
-  pair <string, string> paramFreeze = prepareFreeze (activeCoeff) ;
+  vector<string> paramFreeze = prepareFreeze (active_coeffs) ;
 
   string fitting_command = "combine -M MultiDimFit " + rootfilename ;
   fitting_command += " --algo=grid --points 1200 -m 125" ;
   fitting_command += " -t -1 --expectSignal=1" ;  // FIXME check whehter expectSignal is needed
-  fitting_command += " --redefineSignalPOIs k_" + wilson_coeff_name ;
-  fitting_command += " --freezeParameters r," + paramFreeze.first ;
-  fitting_command += " --setParameters r=1," ; // + paramFreeze.second ;
-  fitting_command += " --setParameterRanges k_" + wilson_coeff_name + "=-2,2" ;
+  fitting_command += " --redefineSignalPOIs " + paramFreeze.at (2) ;
+  fitting_command += " --freezeParameters r," + paramFreeze.at (0) ;
+  fitting_command += " --setParameters r=1," ; // + paramFreeze.at (1) ;
+  fitting_command += " --setParameterRanges " + paramFreeze.at (3) ;
   fitting_command += " --verbose " + comb_verbosity ;
   fitting_command += " --robustFit=1" ;
   fitting_command += " --X-rtd FITTER_NEW_CROSSING_ALGO" ;
@@ -674,25 +681,27 @@ createCondorScripts (pair <std::string, string> fittingCommands,
 }
 
 
-// ---- ----" + 
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 
 int 
-plotHistos (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
+plotHistos (TH1F * h_SM, map<string, TH1F *> h_eftInput,
             string destinationfolder, string prefix, string varname, 
-            float wilson_gen, float wilson_plot, bool log) 
+            vector<float> h_rescales, 
+            bool log) 
 {
   setTDRStyle () ;
 
-  TH1F * h_LI_loc = (TH1F *) h_LI->Clone (TString (h_LI->GetName ()) + "_loc") ;
-  TH1F * h_QU_loc = (TH1F *) h_QU->Clone (TString (h_QU->GetName ()) + "_loc") ;
-
-  h_LI_loc->Scale (wilson_plot / wilson_gen) ;
-  h_QU_loc->Scale (wilson_plot * wilson_plot / (wilson_gen * wilson_gen)) ;
-
+  vector<TH1F *> h_loc ;
   TH1F * h_tot = (TH1F *) h_SM->Clone (TString (h_SM->GetName ()) + "_TOT") ;
-  h_tot->Add (h_LI_loc) ;
-  h_tot->Add (h_QU_loc) ;
+  for (map<string, TH1F *>::iterator it = h_eftInput.begin () ;
+       it != h_eftInput.end () ; ++it)
+    {
+      h_loc.push_back ((TH1F *) it->second->Clone (TString (it->second->GetName ()) + "_loc")) ; 
+      h_loc.back ()->Scale (h_rescales.at (h_loc.size () - 1)) ;      
+      h_tot->Add (h_loc.back ()) ;
+    }
+
   h_tot->SetLineColor (kOrange + 8) ;
   h_tot->SetFillColor (kOrange + 8) ;
   h_tot->SetTitle ("") ;

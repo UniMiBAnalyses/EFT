@@ -150,16 +150,16 @@ scaleAllHistos (std::map<std::string, TH1F *> & hMap, float value) ;
 void 
 checkEmptyBins (std::map<std::string, TH1F *> & hMap) ;
 
-std::pair <std::string, std::string>
+std::vector <std::string>
 prepareFreeze (std::vector<std::string> activeCoeff) ;
 
 std::string
 merge (std::vector<std::string> list, const std::string & joint) ;
 
 std::pair <std::string, std::string>
-createDataCard (TH1F * h_SM, std::map<std::string, TH1F *> h_eftInfo, 
+createDataCard (TH1F * h_SM, std::map<std::string, TH1F *> h_eftInput, 
                 std::string destinationfolder, std::string prefix, std::string varname,
-                std::string wilson_coeff_name, 
+                std::vector<std::string> active_coeffs, 
                 CfgParser * gConfigParser) ;
 
 std::string 
@@ -171,10 +171,12 @@ createCondorScripts (std::pair <std::string, std::string> fittingCommands,
                      std::string cmssw_folder,
                      std::string execution_folder,
                      std::string varname) ;
+
 int 
-plotHistos (TH1F * h_SM, TH1F * h_LI, TH1F * h_QU, 
+plotHistos (TH1F * h_SM, std::map<std::string, TH1F *> h_eftInput,
             std::string destinationfolder, std::string prefix, std::string varname, 
-            float wilson_gen, float wilson_plot = 1., bool log = false) ;
+            std::vector<float> h_rescales, 
+            bool log = false) ;
 
 // set the likelihood scan aestetics
 void setLSaspect (TGraph * graphScan, std::string variable) ;

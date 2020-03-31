@@ -127,7 +127,7 @@ int main (int argc, char ** argv)
     
           vector<pair <string, string> > WScreation_commands ;
           // FIXME creare se non esiste, pulire se esiste
-          string destination_folder = destination_folder_prefix + "_" + wilson_coeff_names.at (iCoeff) ;
+          string destination_folder = destination_folder_prefix + "_" + wilson_coeff_names.at (iCoeff1)+ "_" + wilson_coeff_names.at (iCoeff2) ;
           mkdir (destination_folder.c_str (), S_IRWXU) ;
           // https://pubs.opengroup.org/onlinepubs/009695399/functions/mkdir.html
           // expected error if exists: EEXIST          17      /* File exists */
@@ -154,17 +154,31 @@ int main (int argc, char ** argv)
               h_eftInputs["interference_" + wilson_coeff_names.at (iCoeff1) 
                           + "_" + wilson_coeff_names.at (iCoeff2)]          = h_IN ;
 
+              vector<string> active_coeffs ; 
+              active_coeffs.push_back (wilson_coeff_names.at (iCoeff1)) ;
+              active_coeffs.push_back (wilson_coeff_names.at (iCoeff2)) ;
+
               WScreation_commands.push_back (
                   createDataCard (h_SM, h_eftInputs, 
                                   destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff1)+ "_" + wilson_coeff_names.at (iCoeff2), 
-                                  iHisto->first, wilson_coeff_names.at (iCoeff),
+                                  iHisto->first, active_coeffs,
                                   gConfigParser)
                 ) ;
 
-              // plotHistos (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
-              //             iHisto->first, wilson_coeffs.at (iCoeff), wilson_coeffs_plot.at (iCoeff)) ;
-              // plotHistos (h_SM, h_LI, h_QU, destination_folder, outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff), 
-              //             iHisto->first, wilson_coeffs.at (iCoeff), wilson_coeffs_plot.at (iCoeff), true) ;
+              vector<float> h_rescales ;
+              h_rescales.push_back (wilson_coeffs_plot.at (iCoeff1) / wilson_coeffs.at (iCoeff1)) ; // Lin C1
+              h_rescales.push_back (h_rescales.back () * h_rescales.back ()) ;                      // Qua C1
+              h_rescales.push_back (wilson_coeffs_plot.at (iCoeff2) / wilson_coeffs.at (iCoeff2)) ; // Lin C2
+              h_rescales.push_back (h_rescales.back () * h_rescales.back ()) ;                      // Qua C2
+              h_rescales.push_back (h_rescales.at (0) + h_rescales.at (2)) ;                        // Interf
+
+              plotHistos (h_SM, h_eftInputs, destination_folder, 
+                          outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff1)+ "_" + wilson_coeff_names.at (iCoeff2),
+                          iHisto->first, h_rescales) ;
+
+              plotHistos (h_SM, h_eftInputs, destination_folder, 
+                          outfiles_prefix + "_" + wilson_coeff_names.at (iCoeff1)+ "_" + wilson_coeff_names.at (iCoeff2),
+                          iHisto->first, h_rescales, true) ;
         
               char pathname[300] ;
               createCondorScripts (WScreation_commands.back (),
