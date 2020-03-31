@@ -151,7 +151,7 @@ void
 checkEmptyBins (std::map<std::string, TH1F *> & hMap) ;
 
 std::vector <std::string>
-prepareFreeze (std::vector<std::string> activeCoeff) ;
+prepareFreeze (std::vector<std::string> activeCoeff, float range = 2.) ;
 
 std::string
 merge (std::vector<std::string> list, const std::string & joint) ;

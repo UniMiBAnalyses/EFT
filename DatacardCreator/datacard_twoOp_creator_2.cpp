@@ -72,10 +72,35 @@ int main (int argc, char ** argv)
       "SM_", "sm", gConfigParser
     ) ;
 
-  // loop over Wilson coefficients for 2D fits
+  vector<string> input_files (2, "") ;
+  vector<string> ntuple_names  (2, "") ;
+
+  map <string, map<string, TH1F *> > h_LI ;
+  map <string, map<string, TH1F *> > h_QU ;
+
+  // first loop to open all 1D histograms
+  for (int iCoeff = 0 ; iCoeff < wilson_coeff_names.size () ; ++iCoeff)
+    {
+      // first coefficient
+      input_files.at (0) = input_files_folder + "/" + input_files_prefix + "_" + wilson_coeff_names.at (iCoeff) + "_LI.root" ;
+      input_files.at (1) = input_files_folder + "/" + input_files_prefix + "_" + wilson_coeff_names.at (iCoeff) + "_QU.root" ;
+
+      // first coefficient
+      ntuple_names.at (0) = input_ntuples_prefix + "_" + wilson_coeff_names.at (iCoeff) + "_LI" ;
+      ntuple_names.at (1) = input_ntuples_prefix + "_" + wilson_coeff_names.at (iCoeff) + "_QU" ;
+
+      // first coefficient
+      h_LI[wilson_coeff_names.at (iCoeff)] = readNtupleFile (input_files[0], ntuple_names[0], wilson_coeff_names.at (iCoeff) + "_LI_", "linear",    gConfigParser) ;
+      scaleAllHistos (h_LI[wilson_coeff_names.at (iCoeff)], 1./wilson_coeffs.at (iCoeff)) ;
+      h_QU[wilson_coeff_names.at (iCoeff)] = readNtupleFile (input_files[1], ntuple_names[1], wilson_coeff_names.at (iCoeff) + "_QU_", "quadratic", gConfigParser) ;
+      scaleAllHistos (h_QU[wilson_coeff_names.at (iCoeff)], 1./(wilson_coeffs.at (iCoeff) * wilson_coeffs.at (iCoeff))) ;
+    } // first loop to open all histograms
+
+  // second loop over Wilson coefficients, for 2D fits
   // and create datacards, root files, and condor scripts for 1D fits
   for (int iCoeff1 = 0 ; iCoeff1 < wilson_coeff_names.size () ; ++iCoeff1)
     {
+
       for (int iCoeff2 = iCoeff1 + 1 ; iCoeff2 < wilson_coeff_names.size () ; ++iCoeff2)
         {
 
@@ -83,42 +108,15 @@ int main (int argc, char ** argv)
                << " vs. " << wilson_coeff_names.at (iCoeff2) << endl ;
           cout << "---- ---- ---- ---- ---- ---- ---- ---- ---- " << endl ;
     
-          vector<string> input_files ;
-          // first coefficient
-          input_files.push_back (input_files_folder + "/" + input_files_prefix + "_" + wilson_coeff_names.at (iCoeff1) + "_LI.root") ;
-          input_files.push_back (input_files_folder + "/" + input_files_prefix + "_" + wilson_coeff_names.at (iCoeff1) + "_QU.root") ;
-          // second coefficient
-          input_files.push_back (input_files_folder + "/" + input_files_prefix + "_" + wilson_coeff_names.at (iCoeff2) + "_LI.root") ;
-          input_files.push_back (input_files_folder + "/" + input_files_prefix + "_" + wilson_coeff_names.at (iCoeff2) + "_QU.root") ;
           // interference between the two
-          input_files.push_back (input_files_folder + "/" + input_files_prefix + "_" + wilson_coeff_names.at (iCoeff1) + "_" + wilson_coeff_names.at (iCoeff2) + "_IN.root") ;
-
-          //name of ntuples in this order: sm, linear(interference), quadratic(BSM)
-          vector<string> ntuple_names ;
-          // first coefficient
-          ntuple_names.push_back (input_ntuples_prefix + "_" + wilson_coeff_names.at (iCoeff1) + "_LI") ;
-          ntuple_names.push_back (input_ntuples_prefix + "_" + wilson_coeff_names.at (iCoeff1) + "_QU") ;
-          // second coefficient
-          ntuple_names.push_back (input_ntuples_prefix + "_" + wilson_coeff_names.at (iCoeff2) + "_LI") ;
-          ntuple_names.push_back (input_ntuples_prefix + "_" + wilson_coeff_names.at (iCoeff2) + "_QU") ;
-          // interference between the two
-          ntuple_names.push_back (input_ntuples_prefix + "_" + wilson_coeff_names.at (iCoeff1) + "_" + wilson_coeff_names.at (iCoeff2) + "_IN") ;
+          string input_file = input_files_folder + "/" + input_files_prefix + "_" + wilson_coeff_names.at (iCoeff1) + "_" + wilson_coeff_names.at (iCoeff2) + "_IN.root" ;
+          string ntuple_name = input_ntuples_prefix + "_" + wilson_coeff_names.at (iCoeff1) + "_" + wilson_coeff_names.at (iCoeff2) + "_IN" ;
 
           // reading the physics from the input files
           // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
     
-          // first coefficient
-          map<string, TH1F *> hmap_LI_C1 = readNtupleFile (input_files[0], ntuple_names[0], wilson_coeff_names.at (iCoeff1) + "_LI_", "linear",    gConfigParser) ;
-          scaleAllHistos (hmap_LI_C1, 1./wilson_coeffs.at (iCoeff1)) ;
-          map<string, TH1F *> hmap_QU_C1 = readNtupleFile (input_files[1], ntuple_names[1], wilson_coeff_names.at (iCoeff1) + "_QU_", "quadratic", gConfigParser) ;
-          scaleAllHistos (hmap_QU_C1, 1./(wilson_coeffs.at (iCoeff1) * wilson_coeffs.at (iCoeff1))) ;
-          // second coefficient
-          map<string, TH1F *> hmap_LI_C2 = readNtupleFile (input_files[2], ntuple_names[2], wilson_coeff_names.at (iCoeff2) + "_LI_", "linear",    gConfigParser) ;
-          scaleAllHistos (hmap_LI_C2, 1./wilson_coeffs.at (iCoeff2)) ;
-          map<string, TH1F *> hmap_QU_C2 = readNtupleFile (input_files[3], ntuple_names[3], wilson_coeff_names.at (iCoeff2) + "_QU_", "quadratic", gConfigParser) ;
-          scaleAllHistos (hmap_QU_C2, 1./(wilson_coeffs.at (iCoeff2) * wilson_coeffs.at (iCoeff2))) ;
           // interference between the two
-          map<string, TH1F *> hmap_IN = readNtupleFile (input_files[4], ntuple_names[4], wilson_coeff_names.at (iCoeff1) + "_" + wilson_coeff_names.at (iCoeff2) + "_IN_", "interference", gConfigParser) ;
+          map<string, TH1F *> hmap_IN = readNtupleFile (input_file, ntuple_name, wilson_coeff_names.at (iCoeff1) + "_" + wilson_coeff_names.at (iCoeff2) + "_IN_", "interference", gConfigParser) ;
           scaleAllHistos (hmap_IN, 1./(wilson_coeffs.at (iCoeff1) * wilson_coeffs.at (iCoeff2))) ;
     
           // creating datacards and rootfile for each variable
@@ -139,10 +137,10 @@ int main (int argc, char ** argv)
             {
               // get the three histograms 
               TH1F * h_SM = iHisto->second ;
-              TH1F * h_LI_C1 = hmap_LI_C1.at (iHisto->first) ;
-              TH1F * h_QU_C1 = hmap_QU_C1.at (iHisto->first) ;
-              TH1F * h_LI_C2 = hmap_LI_C2.at (iHisto->first) ;
-              TH1F * h_QU_C2 = hmap_QU_C2.at (iHisto->first) ;
+              TH1F * h_LI_C1 = h_LI[wilson_coeff_names.at (iCoeff1)].at (iHisto->first) ;
+              TH1F * h_QU_C1 = h_QU[wilson_coeff_names.at (iCoeff1)].at (iHisto->first) ;
+              TH1F * h_LI_C2 = h_LI[wilson_coeff_names.at (iCoeff2)].at (iHisto->first) ;
+              TH1F * h_QU_C2 = h_QU[wilson_coeff_names.at (iCoeff2)].at (iHisto->first) ;
               TH1F * h_IN = hmap_IN.at (iHisto->first) ;
 
               map<string, TH1F *> h_eftInputs ;
@@ -163,6 +161,9 @@ int main (int argc, char ** argv)
                                   iHisto->first, active_coeffs,
                                   gConfigParser)
                 ) ;
+
+              // plotting histograms for visualisation purposes
+              // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
 
               vector<float> h_rescales ;
               h_rescales.push_back (wilson_coeffs_plot.at (iCoeff1) / wilson_coeffs.at (iCoeff1)) ; // Lin C1
@@ -187,7 +188,6 @@ int main (int argc, char ** argv)
                                    iHisto->first) ;
     
             } //loop on variables  
-    
           // creating the scripts to be launched to use combine
           // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- 
           
@@ -212,8 +212,7 @@ int main (int argc, char ** argv)
           cout << "source " << destination_folder << "/launchFitting.sh\n" ;
     
         } // loop over second Wilson coefficient
-    } // loop over Wilson coefficients for 2D fits
-
+    } // second loop over Wilson coefficients, for 2D fits
 
   return 0 ;
 }

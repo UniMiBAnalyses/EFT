@@ -344,7 +344,7 @@ readNtupleFile (string rootFileName, string ntupleName,
   vector<string>::iterator it = unique (allvars.begin (), allvars.end ()) ;
   allvars.resize (distance (allvars.begin (), it)) ;
  
-  printvector (allvars) ;
+//  printvector (allvars) ;
 
   for (int iVar = 0 ; iVar < allvars.size () ; ++iVar)
     {	
@@ -421,7 +421,7 @@ readNtupleFile (string rootFileName, string ntupleName,
           iHisto->second->SetBinContent (iHisto->second->GetNbinsX () + 1, 0.) ;
         }
     } 
-  checkEmptyBins (output_histos) ;
+//  checkEmptyBins (output_histos) ;
 
   return output_histos ;
 }
@@ -457,7 +457,7 @@ checkEmptyBins (std::map<std::string, TH1F *> & hMap)
       cout << " > histo: " << iHisto->second->GetName () << "\n" ; 	
       for (int iBin = 0 ; iBin < iHisto->second->GetNbinsX () + 2 ; ++iBin) 
         {
-          if (iHisto->second->GetBinContent (iBin) < 1)
+          if (fabs (iHisto->second->GetBinContent (iBin)) < 1)
             {
               cout << "   bin " << iBin << " = " << iHisto->second->GetBinContent (iBin) << "\n" ;
             }  
@@ -472,9 +472,11 @@ checkEmptyBins (std::map<std::string, TH1F *> & hMap)
 
 // build the list of the operators to be frozen
 vector <string>
-prepareFreeze (vector<string> activeCoeff)
+prepareFreeze (vector<string> activeCoeff, float frange)
 {
-  string range = "-2,2" ;
+  string range = to_string (-1 * frange) + "," + to_string (frange) ;
+
+  string ranges = "" ;
   string list = "" ;
   string vals = "" ;
   string active = "" ;
@@ -490,15 +492,15 @@ prepareFreeze (vector<string> activeCoeff)
       else
         {
           active += "k_" + gAllCoeff.at (iCoeff) + "," ;
-          range += "k_" + gAllCoeff.at (iCoeff) + "=" + range + "," ;
+          ranges += "k_" + gAllCoeff.at (iCoeff) + "=" + range + ":" ;
         }  
     }
   // remove the last comma
   vector<string> result ;
   result.push_back (list.substr (0, list.size () - 1)) ;
-  result.push_back (vals.substr (0, list.size () - 1)) ;
-  result.push_back (active.substr (0, list.size () - 1)) ;
-  result.push_back (range.substr (0, list.size () - 1)) ;
+  result.push_back (vals.substr (0, vals.size () - 1)) ;
+  result.push_back (active.substr (0, active.size () - 1)) ;
+  result.push_back (ranges.substr (0, ranges.size () - 1)) ;
   return result ;
 }
 
@@ -561,7 +563,10 @@ createDataCard (TH1F * h_SM, map<string, TH1F *> h_eftInput,
   output_datacard << "observation\t" << h_SM->Integral () << endl ;
   output_datacard <<separator ;
 
-  output_datacard << "bin\t\ttest\ttest\ttest\n";
+  output_datacard << "bin\t\ttest";
+  for (int i = 0 ; i < h_eftInput.size () ; ++i) output_datacard << "\ttest" ;
+  output_datacard << "\n" ;
+
   output_datacard << "process\t"
                   << "\tsm" ;
   for (map<string, TH1F *>::iterator it = h_eftInput.begin () ; 
@@ -572,6 +577,7 @@ createDataCard (TH1F * h_SM, map<string, TH1F *> h_eftInput,
   output_datacard << "process\t\t0" ;
   for (int i = 0 ; i < h_eftInput.size () ; ++i) output_datacard << "\t" << i+1 ;
   output_datacard << "\n" ;
+
   output_datacard << "rate\t\t" 
                   << h_SM->Integral () << "\t" ;
   for (map<string, TH1F *>::iterator it = h_eftInput.begin () ; 
@@ -579,8 +585,14 @@ createDataCard (TH1F * h_SM, map<string, TH1F *> h_eftInput,
     output_datacard << it->second->Integral () << "\t" ;
   output_datacard << "\n" ;
   output_datacard <<separator ;
-  output_datacard <<"lumi\t\tlnN\t1.02\t1.02\t1.02\n";
-  output_datacard <<"bla\t\tlnN\t-\t-\t1.05\n";
+
+  output_datacard <<"lumi\t\tlnN\t1.02" ;
+  for (map<string, TH1F *>::iterator it = h_eftInput.begin () ; 
+       it != h_eftInput.end () ; ++it)
+    output_datacard << "\t1.02" ;
+  output_datacard << "\n" ;
+
+//  output_datacard <<"bla\t\tlnN\t-\t-\t1.05\n";
   output_datacard.close () ;
 
   //PG apparently this may work with the EFT model only
